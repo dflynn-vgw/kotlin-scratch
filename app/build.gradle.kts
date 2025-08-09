@@ -20,8 +20,8 @@ repositories {
 }
 
 dependencies {
-    // This dependency is used by the application.
-    implementation(libs.guava)
+    // Add your project dependencies here
+    // implementation("group:artifact:version")
 }
 
 testing {

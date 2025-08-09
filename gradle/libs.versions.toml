@@ -2,10 +2,12 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 
 [versions]
-guava = "33.4.6-jre"
+# Add your dependency versions here
+# example = "1.0.0"
 
 [libraries]
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
+# Add your libraries here
+# example = { module = "group:artifact", version.ref = "example" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.0" }
