@@ -5,23 +5,34 @@ package org.example
 
 import org.example.sudoko.Puzzle
 
-class App {
-    val greeting: String
-        get() {
-            return "Hello World!"
-        }
-}
+/** Sudoku Application: Initialize with a map of puzzles and print them on start */
+class App(
+    val puzzles: Map<String, Puzzle> = emptyMap(),
+) {
+    /**
+     * Start the application by printing all puzzles. Requires
+     * puzzles, otherwise will throw InvalidArgumentException
+     **/
+    fun start() {
+        require(!puzzles.isEmpty()) { "puzzles must not be empty" }
+        print()
+    }
 
-fun main() {
-    val puzzles: Map<String, Puzzle> = mapOf(
-        "Puzzle: 01, Empty (default)" to Puzzle(),
-        "Puzzle: 02, Easy" to Puzzle("530070000600195000098000060800060003400803001700020006060000280000419005000080079"),
-        "Puzzle: 03, Medium" to Puzzle("005300000800000020070010500400005300010070006003200080060500009004000030000009700"),
-        "Puzzle: 04, Hard" to Puzzle("200080300060070084030500209000105408000000000402706000301007040720040060004010003")
-    )
-
-    puzzles.forEach { (name, puzzle) ->
+    /** Print all puzzles (name, state) to the console */
+    private fun print() = puzzles.forEach { (name, puzzle) ->
         println(name)
         println(puzzle.toString())
     }
+}
+
+/** Main entry point for the application */
+fun main() {
+    App(
+        mapOf(
+            "Puzzle: 01, Empty (default)" to Puzzle(),
+            "Puzzle: 02, Easy" to Puzzle("530070000600195000098000060800060003400803001700020006060000280000419005000080079"),
+            "Puzzle: 03, Medium" to Puzzle("005300000800000020070010500400005300010070006003200080060500009004000030000009700"),
+            "Puzzle: 04, Hard" to Puzzle("200080300060070084030500209000105408000000000402706000301007040720040060004010003")
+        )
+    ).start()
 }

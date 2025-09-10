@@ -3,12 +3,44 @@
  */
 package org.example
 
+import org.example.sudoko.Puzzle
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
-import kotlin.test.assertNotNull
 
+/** Tests for Application Startup */
 class AppTest {
-    @Test fun appHasAGreeting() {
-        val classUnderTest = App()
-        assertNotNull(classUnderTest.greeting, "app should have a greeting")
+
+    @Test
+    fun appCannotStartWithNoPuzzles() {
+        val puzzles: Map<String, Puzzle> = emptyMap()
+
+        assertThrows<IllegalArgumentException>("puzzles must not be empty") {
+            App(puzzles).start()
+        }
+    }
+
+    @Test
+    fun appShouldStartWithDefaultPuzzle() {
+        val puzzles: Map<String, Puzzle> = mapOf(
+            "Puzzle: 01, Empty (default)" to Puzzle()
+        )
+
+        assertDoesNotThrow {
+            App(puzzles).start()
+        }
+    }
+
+    @Test
+    fun appShouldStartWithMultiplePuzzles() {
+        val puzzles: Map<String, Puzzle> = mapOf(
+            "Puzzle: 01, Easy" to Puzzle("530070000600195000098000060800060003400803001700020006060000280000419005000080079"),
+            "Puzzle: 02, Medium" to Puzzle("005300000800000020070010500400005300010070006003200080060500009004000030000009700"),
+            "Puzzle: 03, Hard" to Puzzle("200080300060070084030500209000105408000000000402706000301007040720040060004010003")
+        )
+
+        assertDoesNotThrow {
+            App(puzzles).start()
+        }
     }
 }
