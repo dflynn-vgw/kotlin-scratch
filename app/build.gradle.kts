@@ -19,7 +19,7 @@ dependencies {
     implementation(libs.kotlin.stdlib)
 
     // Test dependencies with consistent framework
-    testImplementation(libs.kotlin.test.junit5)   // Kotlin test library with JUnit 5 support
+    testImplementation(libs.kotlin.test.junit5) // Kotlin test library with JUnit 5 support
     testImplementation(libs.junit.jupiter.engine) // JUnit 5 test engine
     testImplementation(libs.junit.jupiter.params) // JUnit 5 parameterized tests and CSV support
 }
@@ -27,11 +27,11 @@ dependencies {
 testing {
     suites {
         val test by
-        @Suppress("UnstableApiUsage")
-        getting(JvmTestSuite::class) {
             @Suppress("UnstableApiUsage")
-            useJUnitJupiter()
-        }
+            getting(JvmTestSuite::class) {
+                @Suppress("UnstableApiUsage")
+                useJUnitJupiter()
+            }
     }
 }
 
@@ -55,8 +55,8 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     "max_line_length" to "120",
-                    "ktlint_standard_no-wildcard-imports" to "disabled"
-                )
+                    "ktlint_standard_no-wildcard-imports" to "disabled",
+                ),
             )
     }
     kotlinGradle {
@@ -78,5 +78,3 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
-
-
