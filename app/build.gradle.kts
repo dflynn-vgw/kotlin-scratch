@@ -17,9 +17,9 @@ dependencies {
     implementation(libs.kotlin.stdlib)
 
     // Test dependencies with consistent framework
-    testImplementation(libs.kotlin.test.junit5)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.jupiter.params)
+    testImplementation(libs.kotlin.test.junit5)   // Kotlin test library with JUnit 5 support
+    testImplementation(libs.junit.jupiter.engine) // JUnit 5 test engine
+    testImplementation(libs.junit.jupiter.params) // JUnit 5 parameterized tests and CSV support
 }
 
 testing {
