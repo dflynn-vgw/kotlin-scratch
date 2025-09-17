@@ -22,9 +22,9 @@ class Puzzle(
     init {
         val digits = state.filter { it.isDigit() }.map { it.toString().toInt() }
         require(digits.size == 81) { "State must contain exactly 81 digits (0-9)" }
-        for (i in 0 until 9) {
-            for (j in 0 until 9) {
-                setCell(i, j, digits[i * 9 + j])
+        for (row in 0 until 9) {
+            for (col in 0 until 9) {
+                setCell(row, col, digits[row * 9 + col])
             }
         }
     }
@@ -93,6 +93,4 @@ class Puzzle(
         sb.setLength(sb.length - 1)
         return sb.toString()
     }
-
-    fun print() = println(this.toString())
 }
