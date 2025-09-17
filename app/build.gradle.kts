@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     // Apply the Versions plugin to allow checking for dependency updates.
     alias(libs.plugins.versions)
+    // Apply the Spotless plugin to allow code formatting.
+    alias(libs.plugins.spotless)
     // Apply the application plugin to add support for building a CLI application in Java.
     application
 }
@@ -45,6 +47,24 @@ application {
     mainClass = "org.example.AppKt"
 }
 
+// Spotless configuration
+spotless {
+    kotlin {
+        target("**/*.kt")
+        ktlint()
+            .editorConfigOverride(
+                mapOf(
+                    "max_line_length" to "120",
+                    "ktlint_standard_no-wildcard-imports" to "disabled"
+                )
+            )
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint()
+    }
+}
+
 tasks.test {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
@@ -58,3 +78,5 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
+
+
