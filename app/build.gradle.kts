@@ -49,11 +49,12 @@ tasks.test {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
-
-// Add compiler options
+// Configure Kotlin compilation tasks.
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "21"
-        freeCompilerArgs = listOf("-Xjsr305=strict")
+    compilerOptions {
+        // Set the JVM target to 21.
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        // Enable strict nullability checks for Java interop.
+        freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
