@@ -15,8 +15,8 @@ class Puzzle(
         0 0 0 | 0 0 0 | 0 0 0
         0 0 0 | 0 0 0 | 0 0 0
         0 0 0 | 0 0 0 | 0 0 0
-    """.trimIndent()
-){
+    """.trimIndent(),
+) {
     private val boxes: Array<Array<Box>> = Array(3) { Array(3) { Box() } }
 
     init {
@@ -53,9 +53,7 @@ class Puzzle(
         return result
     }
 
-    fun getBox(boxRow: Int, boxCol: Int): Box {
-        return boxes[boxRow][boxCol]
-    }
+    fun getBox(boxRow: Int, boxCol: Int): Box = boxes[boxRow][boxCol]
 
     fun setCell(row: Int, col: Int, value: Int) {
         val boxRow = row / 3

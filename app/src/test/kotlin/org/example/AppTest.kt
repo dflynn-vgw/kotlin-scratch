@@ -23,7 +23,7 @@ class AppTest {
     @Test
     fun appShouldStartWithDefaultPuzzle() {
         val puzzles: Map<String, Puzzle> = mapOf(
-            "Puzzle: 01, Empty (default)" to Puzzle()
+            "Puzzle: 01, Empty (default)" to Puzzle(),
         )
 
         assertDoesNotThrow {
@@ -34,9 +34,12 @@ class AppTest {
     @Test
     fun appShouldStartWithMultiplePuzzles() {
         val puzzles: Map<String, Puzzle> = mapOf(
-            "Puzzle: 01, Easy" to Puzzle("530070000600195000098000060800060003400803001700020006060000280000419005000080079"),
-            "Puzzle: 02, Medium" to Puzzle("005300000800000020070010500400005300010070006003200080060500009004000030000009700"),
-            "Puzzle: 03, Hard" to Puzzle("200080300060070084030500209000105408000000000402706000301007040720040060004010003")
+            "Puzzle: 01, Easy" to
+                Puzzle("530070000600195000098000060800060003400803001700020006060000280000419005000080079"),
+            "Puzzle: 02, Medium" to
+                Puzzle("005300000800000020070010500400005300010070006003200080060500009004000030000009700"),
+            "Puzzle: 03, Hard" to
+                Puzzle("200080300060070084030500209000105408000000000402706000301007040720040060004010003"),
         )
 
         assertDoesNotThrow {
