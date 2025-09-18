@@ -62,8 +62,8 @@ class PuzzleTests {
                         sb.append(' ')
                     }
                 }
-                val ch = state[i]
-                sb.append(if (ch == '0') '0' else ch)
+
+                sb.append(state[i])
             }
             return sb.toString()
         }
