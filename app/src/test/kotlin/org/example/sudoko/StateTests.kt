@@ -1,8 +1,10 @@
 package org.example.sudoko
 
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
 class StateTests {
@@ -110,6 +112,47 @@ class StateTests {
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.working[row * 9 + col]
         assertEquals(expect, actual)
+    }
+
+    @Test
+    @DisplayName("All Rows Combined Equals State String")
+    fun all_rows_combined_equals_state_string() {
+        val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+        val state = State.fromString(stateStr)
+        val rowStrings = (0..8).map { state.getRow(it).joinToString("") }
+        val combined = rowStrings.joinToString("")
+
+        assertEquals(stateStr, combined)
+    }
+
+    @Test
+    @DisplayName("All Columns Combined Equals State String")
+    fun all_columns_combined_equals_state_string() {
+        val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+        val state = State.fromString(stateStr)
+        val colStrings = (0..8).map { state.getCol(it).joinToString("") }
+        val combined = (0..8).flatMap { colStrings.map { col -> col[it] } }.joinToString("")
+        assertEquals(stateStr, combined)
+    }
+
+    @Test
+    @Ignore("Tricky to get right, needs more thought")
+    @DisplayName("All Boxes Combined Equals State String")
+    fun all_boxes_combined_equals_state_string() {
+        val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+        val state = State.fromString(stateStr)
+        val boxStrings = (0..8).map { state.getBox(it).joinToString("") }
+        val combined = (0..8).flatMap { boxStrings.map { box -> box[it] } }.joinToString("")
+        assertEquals(stateStr, combined)
+    }
+
+    @Test
+    @DisplayName("All Cells Combined Equals State String")
+    fun all_cells_combined_equals_state_string() {
+        val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+        val state = State.fromString(stateStr)
+        val combined = (0..8).flatMap { row -> (0..8).map { col -> state.getCell(row, col) } }.joinToString("")
+        assertEquals(stateStr, combined)
     }
 
     private companion object {
