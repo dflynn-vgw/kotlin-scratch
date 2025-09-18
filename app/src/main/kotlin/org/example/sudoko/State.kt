@@ -45,6 +45,13 @@ class State(val initial: Array<Int> = Array(CELLS) { EMPTY }, val working: Array
         }
     }
 
+    /** Get the value at a specific cell (row 0-8, col 0-8) */
+    fun getCell(row: Int, col: Int): Int {
+        require(row in 0..8) { "Row must be between 0 and 8" }
+        require(col in 0..8) { "Column must be between 0 and 8" }
+        return working[row * 9 + col]
+    }
+
     override fun toString() = working.joinToString("")
 
     companion object {

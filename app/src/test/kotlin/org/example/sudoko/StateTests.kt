@@ -89,6 +89,29 @@ class StateTests {
         assertEquals(expect, actual)
     }
 
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                     | STATE                                                                             | ROW | COL | EXPECT
+            Puzzle: 01, Empty (cell 0,0) |                                                                                   | 0   | 0   | 0
+            Puzzle: 02, Easy (cell 0,0)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 0   | 5
+            Puzzle: 02, Easy (cell 4,4)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 4   | 4   | 0
+            Puzzle: 03, Medium (cell 1,1)| 005300000800000020070010500400005300010070006003200080060500009004000030000009700 | 1   | 1   | 0
+            Puzzle: 04, Hard (cell 6,3)  | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 6   | 3   | 0
+            Puzzle: 04, Hard (cell 8,8)  | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 8   | 8   | 3""",
+    )
+    @DisplayName("Scenarios for Cell Selection")
+    fun scenarios_for_cell_selection(name: String, stateStr: String?, row: Int, col: Int, expect: Int) {
+        validateStateString(stateStr ?: EMPTY_STATE)
+        require(row in 0..8) { "Row must be between 0 and 8" }
+        require(col in 0..8) { "Column must be between 0 and 8" }
+        require(expect in 0..9) { "Expect must be between 0 and 9" }
+        val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
+        val actual = state.working[row * 9 + col]
+        assertEquals(expect, actual)
+    }
+
     private companion object {
         val EMPTY_STATE = "0".repeat(81)
 
