@@ -68,6 +68,27 @@ class StateTests {
         assertEquals(expect, actual)
     }
 
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                    | STATE                                                                             | BOX | EXPECT
+            Puzzle: 01, Empty (box 0)   |                                                                                   | 0   | 000000000
+            Puzzle: 02, Easy (box 0)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 530600098
+            Puzzle: 02, Easy (box 4)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 4   | 060803020
+            Puzzle: 03, Medium (box 1)  | 005300000800000020070010500400005300010070006003200080060500009004000030000009700 | 1   | 300000010
+            Puzzle: 04, Hard (box 6)    | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 6   | 301720004
+            Puzzle: 04, Hard (box 8)    | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 8   | 040060003""",
+    )
+    @DisplayName("Scenarios for Box Selection")
+    fun scenarios_for_box_selection(name: String, stateStr: String?, box: Int, expect: String) {
+        validateStateString(stateStr ?: EMPTY_STATE)
+        validateSelectorAndExpectation(box, expect)
+        val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
+        val actual = state.getBox(box).joinToString("")
+        assertEquals(expect, actual)
+    }
+
     private companion object {
         val EMPTY_STATE = "0".repeat(81)
 
