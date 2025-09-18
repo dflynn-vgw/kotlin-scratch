@@ -38,18 +38,11 @@ class State(val initial: Array<Int> = Array(CELLS) { EMPTY }, val working: Array
     /** Get a specific 3x3 box (0-8) as an array of 9 integers */
     fun getBox(box: Int): Array<Int> {
         require(box in 0..8) { "Box must be between 0 and 8" }
-        val boxRow = box / 3
-        val boxCol = box % 3
-        val result = Array(9) { EMPTY }
-        var index = 0
-        for (r in 0 until 3) {
-            for (c in 0 until 3) {
-                val globalRow = boxRow * 3 + r
-                val globalCol = boxCol * 3 + c
-                result[index++] = working[globalRow * 9 + globalCol]
-            }
+        return Array(9) { i ->
+            val row = box / 3 * 3 + i / 3 // Row within the box
+            val col = box % 3 * 3 + i % 3 // Column within the box
+            working[row * 9 + col] // Convert to 1D index
         }
-        return result
     }
 
     override fun toString() = working.joinToString("")
