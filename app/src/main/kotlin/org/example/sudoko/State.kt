@@ -23,9 +23,16 @@ class State(val initial: Array<Int> = Array(CELLS) { EMPTY }, val working: Array
         return sb.toString()
     }
 
+    /** Get a specific row (0-8) as an array of 9 integers */
     fun getRow(row: Int): Array<Int> {
         require(row in 0..8) { "Row must be between 0 and 8" }
-        return working.sliceArray(row * 9 until (row + 1) * 9)
+        return working.sliceArray(row * 9 until (row + 1) * 9) // Get 9 elements starting from row*9
+    }
+
+    /** Get a specific column (0-8) as an array of 9 integers */
+    fun getCol(col: Int): Array<Int> {
+        require(col in 0..8) { "Column must be between 0 and 8" }
+        return Array(9) { working[it * 9 + col] } // Collect every 9th element starting from col
     }
 
     override fun toString() = working.joinToString("")

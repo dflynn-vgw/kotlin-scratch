@@ -11,7 +11,7 @@ class StateTests {
     @CsvSource(
         delimiter = '|',
         textBlock =
-        """#SCENARIO                | STATE  
+        """#SCENARIO                    | STATE  
             Puzzle: 01, Empty (default) | 
             Puzzle: 02, Easy            | 530070000600195000098000060800060003400803001700020006060000280000419005000080079
             Puzzle: 03, Medium          | 005300000800000020070010500400005300010070006003200080060500009004000030000009700
@@ -44,6 +44,27 @@ class StateTests {
         validateSelectorAndExpectation(row, expect)
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.getRow(row).joinToString("")
+        assertEquals(expect, actual)
+    }
+
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                    | STATE                                                                             | COL | EXPECT
+            Puzzle: 01, Empty (col 0)   |                                                                                   | 0   | 000000000
+            Puzzle: 02, Easy (col 0)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 560847000
+            Puzzle: 02, Easy (col 4)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 4   | 790602018
+            Puzzle: 03, Medium (col 1)  | 005300000800000020070010500400005300010070006003200080060500009004000030000009700 | 1   | 007010600
+            Puzzle: 04, Hard (col 6)    | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 6   | 302400000
+            Puzzle: 04, Hard (col 8)    | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 8   | 049800003""",
+    )
+    @DisplayName("Scenarios for Column Selection")
+    fun scenarios_for_col_selection(name: String, stateStr: String?, col: Int, expect: String) {
+        validateStateString(stateStr ?: EMPTY_STATE)
+        validateSelectorAndExpectation(col, expect)
+        val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
+        val actual = state.getCol(col).joinToString("")
         assertEquals(expect, actual)
     }
 
