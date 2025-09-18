@@ -23,6 +23,11 @@ class State(val initial: Array<Int> = Array(CELLS) { EMPTY }, val working: Array
         return sb.toString()
     }
 
+    fun getRow(row: Int): Array<Int> {
+        require(row in 0..8) { "Row must be between 0 and 8" }
+        return working.sliceArray(row * 9 until (row + 1) * 9)
+    }
+
     override fun toString() = working.joinToString("")
 
     companion object {
