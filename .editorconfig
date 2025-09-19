@@ -1,0 +1,10 @@
+root = true
+# rules reference: https://pinterest.github.io/ktlint/1.7.1/rules/code-styles/
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+
+[**/test/**.kt]
+ktlint_ignore_back_ticked_identifier=true
+
+[*.{yml,yaml,dot}]
+indent_size = 2
