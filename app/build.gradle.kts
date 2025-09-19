@@ -51,17 +51,11 @@ application {
 spotless {
     kotlin {
         target("**/*.kt")
-        ktlint()
-            .editorConfigOverride(
-                mapOf(
-                    "max_line_length" to "120",
-                    "ktlint_standard_no-wildcard-imports" to "disabled",
-                ),
-            )
+        ktlint("1.7.1")
     }
     kotlinGradle {
         target("*.gradle.kts")
-        ktlint()
+        ktlint("1.7.1")
     }
 }
 
