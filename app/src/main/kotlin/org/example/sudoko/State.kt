@@ -1,7 +1,12 @@
 package org.example.sudoko
 
 /** Internal state of a Sudoku puzzle */
-class State(val initial: Array<Int> = Array(CELLS) { EMPTY }, val working: Array<Int> = Array(CELLS) { EMPTY }) {
+class State(
+    /** Initial puzzle state (immutable) */
+    val initial: Array<Int> = Array(CELLS) { EMPTY },
+    /** Current working state (mutable) */
+    val working: Array<Int> = Array(CELLS) { EMPTY },
+) {
     /** Pretty print the state as a multi-line formatted string */
     fun toPrettyString(): String {
         val sb = StringBuilder()
