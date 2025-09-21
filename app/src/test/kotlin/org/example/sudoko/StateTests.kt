@@ -1,11 +1,9 @@
 package org.example.sudoko
 
-import org.example.sudoko.State.Companion.CELLS
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
 class StateTests {
