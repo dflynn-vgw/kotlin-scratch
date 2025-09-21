@@ -1,5 +1,6 @@
 package org.example.sudoko
 
+import org.example.sudoko.State.Companion.CELLS
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -136,13 +137,25 @@ class StateTests {
     }
 
     @Test
-    @Ignore("Tricky to get right, needs more thought")
     @DisplayName("All Boxes Combined Equals State String")
     fun all_boxes_combined_equals_state_string() {
         val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
         val state = State.fromString(stateStr)
         val boxStrings = (0..8).map { state.getBox(it).joinToString("") }
-        val combined = (0..8).flatMap { boxStrings.map { box -> box[it] } }.joinToString("")
+
+        // Reconstruct rows from boxes
+        val rows = (0..8).map { row ->
+            val boxRow = row / 3
+            val withinBoxRow = row % 3
+            (0..2).joinToString("") { boxCol ->
+                boxStrings[boxRow * 3 + boxCol].substring(
+                    withinBoxRow * 3,
+                    withinBoxRow * 3 + 3,
+                )
+            }
+        }
+
+        val combined = rows.joinToString("")
         assertEquals(stateStr, combined)
     }
 
