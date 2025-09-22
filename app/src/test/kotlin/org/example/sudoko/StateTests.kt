@@ -1,8 +1,10 @@
 package org.example.sudoko
 
+import org.example.sudoko.State.Companion.CELLS
 import org.example.sudoko.State.Companion.validateStateString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import kotlin.test.assertEquals
@@ -112,6 +114,22 @@ class StateTests {
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.working[row * 9 + col]
         assertEquals(expect, actual)
+    }
+
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                    | STATE                                                                                 | MESSAGE
+            Invalid (too short)         | 53007000060019500009800006080006000340080300170002000606000028000041900500008007      | State must contain exactly 81 digits (0-9)
+            Invalid (too long)          | 5300700006001950000980000608000600034008030017000200060600002800004190050000800799    | State must contain exactly 81 digits (0-9)
+            Invalid (non-digit)         | 53007000060019500009800006080006000340080300170002000606000A280000419005000080079     | State must contain exactly 81 digits (0-9)
+            Invalid (non-digit)         | 53007000060019500009800006080006000340080300170002000606000-280000419005000080079     | State must contain exactly 81 digits (0-9)""",
+    )
+    @DisplayName("Scenarios for Invalid State String")
+    fun scenarios_for_invalid_state_string(name: String, stateStr: String, message: String) {
+        val exception = assertThrows<IllegalArgumentException>(message) { State.fromString(stateStr) }
+        assertEquals(message, exception.message)
     }
 
     @Test
