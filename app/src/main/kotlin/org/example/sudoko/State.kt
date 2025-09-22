@@ -70,5 +70,10 @@ class State(
             require(digits.size == CELLS) { "State must contain exactly $CELLS digits (0-9)" }
             return State(digits, digits.copyOf())
         }
+
+        fun validateStateString(state: String) {
+            require(state.length == 81) { "State must be exactly 81 characters" }
+            require(state.all { it.isDigit() }) { "State must contain only digits" }
+        }
     }
 }

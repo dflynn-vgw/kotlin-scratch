@@ -1,5 +1,6 @@
 package org.example.sudoko
 
+import org.example.sudoko.State.Companion.validateStateString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -20,9 +21,9 @@ class StateTests {
     )
     @DisplayName("Scenarios for Puzzle Initialisation and Pretty Print")
     fun scenarios_for_puzzle_initialisation_and_pretty_print(name: String, stateStr: String?) {
-        validateStateString(stateStr ?: EMPTY_STATE)
+        validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
-        val expect = prettyState(stateStr ?: EMPTY_STATE)
+        val expect = prettyState(stateStr ?: State.EMPTY_STATE_STRING)
         val actual = state.toPrettyString()
         assertEquals(expect, actual)
     }
@@ -41,7 +42,7 @@ class StateTests {
     )
     @DisplayName("Scenarios for Row Selection")
     fun scenarios_for_row_selection(name: String, stateStr: String?, row: Int, expect: String) {
-        validateStateString(stateStr ?: EMPTY_STATE)
+        validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         validateSelectorAndExpectation(row, expect)
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.getRow(row).joinToString("")
@@ -62,7 +63,7 @@ class StateTests {
     )
     @DisplayName("Scenarios for Column Selection")
     fun scenarios_for_col_selection(name: String, stateStr: String?, col: Int, expect: String) {
-        validateStateString(stateStr ?: EMPTY_STATE)
+        validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         validateSelectorAndExpectation(col, expect)
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.getCol(col).joinToString("")
@@ -83,7 +84,7 @@ class StateTests {
     )
     @DisplayName("Scenarios for Box Selection")
     fun scenarios_for_box_selection(name: String, stateStr: String?, box: Int, expect: String) {
-        validateStateString(stateStr ?: EMPTY_STATE)
+        validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         validateSelectorAndExpectation(box, expect)
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
         val actual = state.getBox(box).joinToString("")
@@ -104,7 +105,7 @@ class StateTests {
     )
     @DisplayName("Scenarios for Cell Selection")
     fun scenarios_for_cell_selection(name: String, stateStr: String?, row: Int, col: Int, expect: Int) {
-        validateStateString(stateStr ?: EMPTY_STATE)
+        validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         require(row in 0..8) { "Row must be between 0 and 8" }
         require(col in 0..8) { "Column must be between 0 and 8" }
         require(expect in 0..9) { "Expect must be between 0 and 9" }
@@ -167,12 +168,6 @@ class StateTests {
     }
 
     private companion object {
-        val EMPTY_STATE = "0".repeat(81)
-
-        fun validateStateString(state: String) {
-            require(state.length == 81) { "State must be exactly 81 characters" }
-            require(state.all { it.isDigit() }) { "State must contain only digits" }
-        }
 
         fun validateSelectorAndExpectation(selector: Int, expect: String) {
             require(selector in 0..8) { "Selector must be between 0 and 8" }
