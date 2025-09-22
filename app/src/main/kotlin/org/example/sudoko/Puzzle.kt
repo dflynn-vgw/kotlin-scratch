@@ -14,6 +14,13 @@ class Puzzle(
         return checkNoDuplicates()
     }
 
+    /** Check if the puzzle is completely solved (all cells filled and valid) */
+    fun isSolved(): Boolean = if (state.working.contains(State.EMPTY)) {
+        false
+    } else {
+        validate() is Outcome.Success
+    }
+
     /** Check that no rows, columns, or boxes contain duplicates */
     private fun checkNoDuplicates(): Outcome {
         for (i in 0 until 9) {

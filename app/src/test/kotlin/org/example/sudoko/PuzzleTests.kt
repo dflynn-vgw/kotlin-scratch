@@ -31,4 +31,25 @@ class PuzzleTests {
         }
         assertEquals(expect, puzzle.validate())
     }
+
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                     | STATE                                                                             | SOLVED
+            Not Solved (all empty)       | 000000000000000000000000000000000000000000000000000000000000000000000000000000000 | false 
+            Not Solved (partially filled) | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | false
+            Solved (valid)               | 534678912672195348198342567859761423426853791713924856961537284287419635345286179 | true
+            Not Solved (partial,invalid) | 530570000600195000098000060800060003400803001700020006060000280000419005000080079 | false 
+            Not Solved (invalid)         | 534678912672195348198342567859761423426853791713924856961537284287419635345286178 | false """,
+    )
+    @DisplayName("Scenarios Puzzle Solved Check")
+    fun scenarios_for_puzzle_solved_check(name: String, stateStr: String, solved: String) {
+        validateStateString(stateStr)
+        val puzzle = Puzzle(stateStr)
+        val expect = when (solved) {
+            "true" -> true else -> false
+        }
+        assertEquals(expect, puzzle.isSolved())
+    }
 }
