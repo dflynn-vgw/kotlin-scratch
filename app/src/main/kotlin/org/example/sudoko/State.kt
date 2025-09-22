@@ -3,9 +3,9 @@ package org.example.sudoko
 /** Internal state of a Sudoku puzzle */
 class State(
     /** Initial puzzle state (immutable) */
-    val initial: Array<Int> = Array(CELLS) { EMPTY },
+    private val initial: Array<Int> = Array(CELLS) { EMPTY },
     /** Current working state (mutable) */
-    val working: Array<Int> = Array(CELLS) { EMPTY },
+    private val working: Array<Int> = Array(CELLS) { EMPTY },
 ) {
     /** Pretty print the state as a multi-line formatted string */
     fun toPrettyString(): String {
@@ -56,6 +56,9 @@ class State(
         require(col in 0..8) { "Column must be between 0 and 8" }
         return working[row * 9 + col]
     }
+
+    /** Check if there are no empty cells in the working state */
+    fun hasEmptyCells() = working.contains(EMPTY)
 
     override fun toString() = working.joinToString("")
 

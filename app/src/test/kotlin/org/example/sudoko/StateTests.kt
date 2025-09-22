@@ -1,6 +1,5 @@
 package org.example.sudoko
 
-import org.example.sudoko.State.Companion.CELLS
 import org.example.sudoko.State.Companion.validateStateString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -112,7 +111,7 @@ class StateTests {
         require(col in 0..8) { "Column must be between 0 and 8" }
         require(expect in 0..9) { "Expect must be between 0 and 9" }
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
-        val actual = state.working[row * 9 + col]
+        val actual = state.getCell(row, col)
         assertEquals(expect, actual)
     }
 
