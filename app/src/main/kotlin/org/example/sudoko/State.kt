@@ -57,6 +57,15 @@ class State(
         return working[row * 9 + col]
     }
 
+    /** Set the value at a specific cell (row 0-8, col 0-8) */
+    fun setCell(row: Int, col: Int, value: Int) {
+        require(row in 0..8) { "Row must be between 0 and 8" }
+        require(col in 0..8) { "Column must be between 0 and 8" }
+        require(value in 0..9) { "Value must be between 0 and 9 (0 for empty)" }
+        require(initial[row * 9 + col] == EMPTY) { "Cannot change initial puzzle values" }
+        working[row * 9 + col] = value
+    }
+
     /** Check if there are no empty cells in the working state */
     fun hasEmptyCells() = working.contains(EMPTY)
 

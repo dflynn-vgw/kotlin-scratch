@@ -131,6 +131,32 @@ class StateTests {
         assertEquals(message, exception.message)
     }
 
+    @ParameterizedTest(name = "Scenario: {index} - {0}")
+    @CsvSource(
+        delimiter = '|',
+        textBlock =
+        """#SCENARIO                    | STATE                                                                             | ROW | COL | VALUE | MESSAGE
+            Invalid (row out of range)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 9   | 0   | 5     | Row must be between 0 and 8
+            Invalid (row out of range)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | -1  | 0   | 5     | Row must be between 0 and 8
+            Invalid (col out of range)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 9   | 5     | Column must be between 0 and 8
+            Invalid (col out of range)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | -1  | 5     | Column must be between 0 and 8
+            Invalid (value too low)     | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 0   | -1    | Value must be between 0 and 9 (0 for empty)
+            Invalid (value too high)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 0   | 10    | Value must be between 0 and 9 (0 for empty)
+            Invalid (change initial)    | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 0   | 1     | Cannot change initial puzzle values
+            Valid (change empty cell)   | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 2   | 4     | Success""",
+    )
+    @DisplayName("Scenarios for Setting Cell Values")
+    fun scenarios_for_setting_cell_values(name: String, stateStr: String, row: Int, col: Int, value: Int, message: String) {
+        val state = State.fromString(stateStr)
+        if (message == "Success") {
+            state.setCell(row, col, value)
+            assertEquals(value, state.getCell(row, col))
+            return
+        }
+        val exception = assertThrows<IllegalArgumentException>(message) { state.setCell(row, col, value) }
+        assertEquals(message, exception.message)
+    }
+
     @Test
     @DisplayName("All Rows Combined Equals State String")
     fun all_rows_combined_equals_state_string() {
