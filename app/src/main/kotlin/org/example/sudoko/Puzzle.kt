@@ -1,9 +1,13 @@
 package org.example.sudoko
 
+import org.example.sudoko.solvers.BacktrackingSolver
+
 /** A 9x9 Sudoku puzzle. Numbers 1-9 only*/
 class Puzzle(
     /** Initial state of the puzzle as a string of 81 characters (0 for empty cells) */
     initialState: String = State.EMPTY_STATE_STRING,
+    /** Solver to use for solving the puzzle (default: BacktrackingSolver) */
+    private val solver: Solver = BacktrackingSolver(),
 ) {
     /** Internal state of the puzzle */
     private val state: State = State.fromString(initialState)
@@ -16,6 +20,36 @@ class Puzzle(
 
     /** Check if the puzzle is completely solved (all cells filled and valid) */
     fun isSolved() = !state.hasEmptyCells() && validate() is Outcome.Success
+
+    /** Attempt to solve the puzzle using the provided solver */
+    fun solve(): Puzzle? = solver.solve(this)
+
+    /** Get a list of all empty cells in the puzzle */
+    fun getEmptyCells(): Array<Cell> {
+        val emptyCells = ArrayList<Cell>()
+
+        for (row in 0 until 9) {
+            for (col in 0 until 9) {
+                if (state.getCell(row, col) == State.EMPTY) {
+                    emptyCells.add(Cell(row, col))
+                }
+            }
+        }
+
+        return emptyCells.toTypedArray()
+    }
+
+    /** Get the value at a specific cell (row 0-8, col 0-8) */
+    fun getCell(cell: Cell): Int {
+        val (row, col) = cell
+        return state.getCell(row, col)
+    }
+
+    /** Get the value at a specific cell (row 0-8, col 0-8) */
+    fun setCell(cell: Cell, value: Int) {
+        val (row, col) = cell
+        state.setCell(row, col, value)
+    }
 
     /** Check that no rows, columns, or boxes contain duplicates */
     private fun checkNoDuplicates(): Outcome {
