@@ -96,7 +96,7 @@ class StateTests {
     @CsvSource(
         delimiter = '|',
         textBlock =
-        """#SCENARIO                     | STATE                                                                             | ROW | COL | EXPECT
+        """#SCENARIO                     | STATE                                                                             | ROW | COL | VAL
             Puzzle: 01, Empty (cell 0,0) |                                                                                   | 0   | 0   | 0
             Puzzle: 02, Easy (cell 0,0)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 0   | 0   | 5
             Puzzle: 02, Easy (cell 4,4)  | 530070000600195000098000060800060003400803001700020006060000280000419005000080079 | 4   | 4   | 0
@@ -105,13 +105,15 @@ class StateTests {
             Puzzle: 04, Hard (cell 8,8)  | 200080300060070084030500209000105408000000000402706000301007040720040060004010003 | 8   | 8   | 3""",
     )
     @DisplayName("Scenarios for Cell Selection")
-    fun scenarios_for_cell_selection(name: String, stateStr: String?, row: Int, col: Int, expect: Int) {
+    fun scenarios_for_cell_selection(name: String, stateStr: String?, row: Int, col: Int, value: Int) {
         validateStateString(stateStr ?: State.EMPTY_STATE_STRING)
         require(row in 0..8) { "Row must be between 0 and 8" }
         require(col in 0..8) { "Column must be between 0 and 8" }
-        require(expect in 0..9) { "Expect must be between 0 and 9" }
+        require(value in 0..9) { "Expect must be between 0 and 9" }
         val state = if (stateStr.isNullOrBlank()) State() else State.fromString(stateStr)
+        val expect = Cell(row, col, value)
         val actual = state.getCell(row, col)
+
         assertEquals(expect, actual)
     }
 
@@ -149,11 +151,12 @@ class StateTests {
     fun scenarios_for_setting_cell_values(name: String, stateStr: String, row: Int, col: Int, value: Int, message: String) {
         val state = State.fromString(stateStr)
         if (message == "Success") {
-            state.setCell(row, col, value)
-            assertEquals(value, state.getCell(row, col))
+            val cell = Cell(row, col, value)
+            state.setCell(cell)
+            assertEquals(cell, state.getCell(row, col))
             return
         }
-        val exception = assertThrows<IllegalArgumentException>(message) { state.setCell(row, col, value) }
+        val exception = assertThrows<IllegalArgumentException>(message) { state.setCell(Cell(row, col, value)) }
         assertEquals(message, exception.message)
     }
 
@@ -206,7 +209,7 @@ class StateTests {
     fun all_cells_combined_equals_state_string() {
         val stateStr = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
         val state = State.fromString(stateStr)
-        val combined = (0..8).flatMap { row -> (0..8).map { col -> state.getCell(row, col) } }.joinToString("")
+        val combined = (0..8).flatMap { row -> (0..8).map { col -> state.getCell(row, col).value } }.joinToString("")
         assertEquals(stateStr, combined)
     }
 

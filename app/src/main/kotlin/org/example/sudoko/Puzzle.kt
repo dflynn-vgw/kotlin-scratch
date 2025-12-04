@@ -30,7 +30,8 @@ class Puzzle(
 
         for (row in 0 until 9) {
             for (col in 0 until 9) {
-                if (state.getCell(row, col) == State.EMPTY) {
+                val cell = state.getCell(row, col)
+                if (cell.isEmpty()) {
                     emptyCells.add(Cell(row, col))
                 }
             }
@@ -40,10 +41,10 @@ class Puzzle(
     }
 
     /** Get the value at a specific cell (row 0-8, col 0-8) */
-    fun getCell(cell: Cell): Int = state.getCell(cell.first, cell.second)
+    fun getCell(cell: Cell): Cell = state.getCell(cell)
 
-    /** Get the value at a specific cell (row 0-8, col 0-8) */
-    fun setCell(cell: Cell, value: Int) = state.setCell(cell.first, cell.second, value)
+    /** Set the value at a specific cell (row 0-8, col 0-8) */
+    fun setCell(cell: Cell) = state.setCell(cell)
 
     /** Check that no rows, columns, or boxes contain duplicates */
     private fun checkNoDuplicates(): Outcome {

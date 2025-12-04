@@ -36,13 +36,13 @@ class BacktrackingSolver : Solver {
     }
 
     private fun tryNumbers(puzzle: Puzzle, cell: Cell): Boolean {
-        val nextValue = puzzle.getCell(cell) + 1 // start from next number
+        val nextValue = puzzle.getCell(cell).value + 1 // start from next number
         for (num in nextValue..9) {
-            puzzle.setCell(cell, num)
-            if (puzzle.validate() is Outcome.Success) return true
+            puzzle.setCell(cell.copyOf(num))
+            if (puzzle.isValid()) return true
         }
 
-        puzzle.setCell(cell, 0)
+        puzzle.setCell(cell.copyOf(0))
         return false // dead end
     }
 }
