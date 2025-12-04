@@ -5,17 +5,20 @@ import org.example.sudoko.Outcome
 import org.example.sudoko.Puzzle
 import org.example.sudoko.Solver
 
-/** Solver implementation using the backtracking algorithm */
+/**
+ * Solver implementation using the backtracking algorithm
+ *
+ * Algorithm Steps:
+ * 1. Find an empty cell in the puzzle
+ * 2. Try placing numbers 1-9 in the empty cell
+ * 3. After placing a number, validate the puzzle state
+ * 4. If valid, recursively attempt to solve the rest of the puzzle
+ * 5. If the puzzle is solved, return the solved puzzle
+ * 6. If placing a number, leads to an invalid state or unsolvable puzzle, backtrack and try the next number
+ * 7. If all numbers 1-9 have been tried and none lead to a solution, return null (unsolvable)
+ *  */
 class BacktrackingSolver : Solver {
     override fun solve(puzzle: Puzzle): Puzzle? {
-        // 1. Find an empty cell in the puzzle
-        // 2. Try placing numbers 1-9 in the empty cell
-        // 3. After placing a number, validate the puzzle state
-        // 4. If valid, recursively attempt to solve the rest of the puzzle
-        // 5. If the puzzle is solved, return the solved puzzle
-        // 6. If placing a number leads to an invalid state or unsolvable puzzle, backtrack and try the next number
-        // 7. If all numbers 1-9 have been tried and none lead to a solution, return null (unsolvable)
-
         val emptyCells = puzzle.getEmptyCells()
         var index = 0
 

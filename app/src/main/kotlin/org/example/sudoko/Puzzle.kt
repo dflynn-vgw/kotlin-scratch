@@ -13,16 +13,16 @@ class Puzzle(
     private val state: State = State.fromString(initialState)
 
     /** Validate the current puzzle state, returning Success or Failure with a reason */
-    fun validate(): Outcome {
-        // Validate rows, columns, and boxes
-        return checkNoDuplicates()
-    }
+    fun validate(): Outcome = checkNoDuplicates()
 
-    /** Check if the puzzle is completely solved (all cells filled and valid) */
-    fun isSolved() = !state.hasEmptyCells() && validate() is Outcome.Success
+    /** Check if the current puzzle state is valid (no duplicates) */
+    fun isValid(): Boolean = validate() is Outcome.Success
 
     /** Attempt to solve the puzzle using the provided solver */
     fun solve(): Puzzle? = solver.solve(this)
+
+    /** Check if the puzzle is completely solved (all cells filled and valid) */
+    fun isSolved() = !state.hasEmptyCells() && validate() is Outcome.Success
 
     /** Get a list of all empty cells in the puzzle */
     fun getEmptyCells(): Array<Cell> {
@@ -40,16 +40,10 @@ class Puzzle(
     }
 
     /** Get the value at a specific cell (row 0-8, col 0-8) */
-    fun getCell(cell: Cell): Int {
-        val (row, col) = cell
-        return state.getCell(row, col)
-    }
+    fun getCell(cell: Cell): Int = state.getCell(cell.first, cell.second)
 
     /** Get the value at a specific cell (row 0-8, col 0-8) */
-    fun setCell(cell: Cell, value: Int) {
-        val (row, col) = cell
-        state.setCell(row, col, value)
-    }
+    fun setCell(cell: Cell, value: Int) = state.setCell(cell.first, cell.second, value)
 
     /** Check that no rows, columns, or boxes contain duplicates */
     private fun checkNoDuplicates(): Outcome {
