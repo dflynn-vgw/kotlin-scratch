@@ -33,6 +33,11 @@ class Puzzle(
     /** Set the value at a specific cell (row 0-8, col 0-8) */
     fun setCell(cell: Cell) = state.setCell(cell)
 
+    /** Check if placing a number in a specific cell is valid according to Sudoku rules */
+    fun isCellValid(cell: Cell): Boolean = isValidGroup(state.getRow(cell.row)) &&
+        isValidGroup(state.getCol(cell.col)) &&
+        isValidGroup(state.getBox(cell.box))
+
     /** Check that no rows, columns, or boxes contain duplicates */
     private fun checkNoDuplicates(): Outcome {
         for (i in 0 until 9) {

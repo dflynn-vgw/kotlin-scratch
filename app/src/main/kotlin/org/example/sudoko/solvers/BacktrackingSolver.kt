@@ -35,14 +35,15 @@ class BacktrackingSolver : Solver {
         return if (puzzle.isSolved()) puzzle else null
     }
 
+    /** Try placing numbers in the given cell, starting from the next possible number */
     private fun tryNumbers(puzzle: Puzzle, cell: Cell): Boolean {
         val nextValue = puzzle.getCell(cell).value + 1 // start from next number
         for (num in nextValue..9) {
             puzzle.setCell(cell.copyOf(num))
-            if (puzzle.isValid()) return true
+            if (puzzle.isCellValid(cell)) return true
         }
 
-        puzzle.setCell(cell.copyOf(0))
+        puzzle.setCell(cell.copyOf(0)) // reset on backtrack
         return false // dead end
     }
 }
