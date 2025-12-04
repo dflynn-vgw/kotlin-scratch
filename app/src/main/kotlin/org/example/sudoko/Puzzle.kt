@@ -25,20 +25,7 @@ class Puzzle(
     fun isSolved() = !state.hasEmptyCells() && validate() is Outcome.Success
 
     /** Get a list of all empty cells in the puzzle */
-    fun getEmptyCells(): Array<Cell> {
-        val emptyCells = ArrayList<Cell>()
-
-        for (row in 0 until 9) {
-            for (col in 0 until 9) {
-                val cell = state.getCell(row, col)
-                if (cell.isEmpty()) {
-                    emptyCells.add(Cell(row, col))
-                }
-            }
-        }
-
-        return emptyCells.toTypedArray()
-    }
+    fun getEmptyCells(): Array<Cell> = state.getEmptyCells()
 
     /** Get the value at a specific cell (row 0-8, col 0-8) */
     fun getCell(cell: Cell): Cell = state.getCell(cell)

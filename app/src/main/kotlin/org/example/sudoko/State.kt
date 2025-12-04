@@ -65,6 +65,12 @@ class State(
     /** Check if there are no empty cells in the working state */
     fun hasEmptyCells() = working.contains(EMPTY)
 
+    /** Get a list of all empty cells in the working state */
+    fun getEmptyCells(): Array<Cell> = working.withIndex()
+        .filter { it.value == EMPTY }
+        .map { Cell(it.index / 9, it.index % 9, EMPTY) }
+        .toTypedArray()
+
     override fun toString() = working.joinToString("")
 
     companion object {
