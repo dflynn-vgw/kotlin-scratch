@@ -1,10 +1,11 @@
-# My Kotlin App
+# Kotlin Scratch
 
-A basic Kotlin application project created with the latest Gradle and Kotlin versions, targeting the JVM.
+A Kotlin playground repository for exploring various algorithms, data structures, and programming challenges. The main branch contains the core tech stack, while feature branches contain specific implementations and experiments.
 
-## 📋 Project Overview
+## Branch Structure
 
-This is a simple Kotlin console application that demonstrates a basic project structure with modern tooling and best practices. The project uses Gradle for dependency management and build automation, with Kotlin DSL for build scripts.
+- **main**: Core tech stack and baseline project structure
+- **Feature branches**: Specific implementations and challenges (see [Project Branches](#-project-branches) below)
 
 ## 🛠️ Technology Stack
 
@@ -173,8 +174,10 @@ class MyTest {
 
 Current dependencies are managed in `app/build.gradle.kts`:
 
-- **Google Guava**: Utility library (implementation)
-- **Kotlin Test**: Testing framework (test scope)
+- **Kotlin Standard Library**: Kotlin standard library (implementation)
+- **Kotlin Test (JUnit5)**: Kotlin test library with JUnit5 support
+- **JUnit Jupiter Engine**: JUnit5 test engine
+- **JUnit Jupiter Params**: Parameterized tests support
 
 ### Adding New Dependencies
 
@@ -201,6 +204,55 @@ sdk use kotlin 2.2.0
 # Check available versions
 sdk list kotlin
 ```
+
+## 🌱 Project Branches
+
+This repository uses a branch-based approach for different projects and experiments:
+
+### 🧩 SUDOKO
+
+**Branch**: `SUDOKO`  
+**Status**: ✅ Complete
+
+A full-featured Sudoku solver implementation with CLI interface.
+
+**Features:**
+- Backtracking algorithm implementation
+- Command-line solver supporting single and multiple puzzles
+- Statistics tracking (steps, backtracks, solve time)
+- Immutable puzzle solving (original puzzle preserved)
+- Comprehensive test coverage
+- Beautiful console output with puzzle visualization
+
+**Key Components:**
+- `Puzzle.kt` - Main puzzle representation (data class)
+- `BacktrackingSolver.kt` - Backtracking algorithm implementation
+- `App.kt` - CLI interface for solving puzzles
+- Outcome pattern with `Success`/`Failure` types
+- Stats tracking with performance metrics
+
+**Usage:**
+```bash
+git checkout SUDOKO
+./gradlew run --args="530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+```
+
+**Performance:**
+- Easy puzzles: ~8,000 steps, ~4,000 backtracks, <30ms
+- Medium puzzles: ~15,000 steps, ~7,000 backtracks, <50ms
+- Hard puzzles: ~50,000+ steps, ~25,000+ backtracks, <200ms
+
+See `app/README.md` on the SUDOKO branch for detailed documentation.
+
+---
+
+### Future Branches
+
+Planned explorations:
+- Graph algorithms (DFS, BFS, Dijkstra)
+- Dynamic programming challenges
+- Data structure implementations
+- Design pattern examples
 
 ## 📚 Learn More
 
