@@ -1,274 +1,257 @@
-# Kotlin Scratch
+# Sudoku Solver
 
-A Kotlin playground repository for exploring various algorithms, data structures, and programming challenges. The main branch contains the core tech stack, while feature branches contain specific implementations and experiments.
+A **Sudoku solver** is an algorithm or program that fills a 9x9 grid so that every row, column, and 3x3 subgrid contains
+the numbers 1-9 exactly once, following the classic Sudoku rules.
 
-## Branch Structure
+This project implements a command-line Sudoku solver written in Kotlin using a backtracking algorithm.
 
-- **main**: Core tech stack and baseline project structure
-- **Feature branches**: Specific implementations and challenges (see [Project Branches](#-project-branches) below)
-
-## 🛠️ Technology Stack
-
-- **Kotlin**: 2.2.0 (latest stable)
-- **Gradle**: 9.0.0 (latest stable) 
-- **Java**: 21 (LTS)
-- **Testing**: kotlin.test framework
-- **Build Script**: Kotlin DSL (build.gradle.kts)
-
-## 🏗️ How This Project Was Initialized
-
-This project was created using Gradle's interactive `init` command with the following selections:
-
-1. **Build Type**: Application
-2. **Language**: Kotlin
-3. **Java Version**: 21
-4. **Project Name**: my-app
-5. **Structure**: Single application project
-6. **Build Script DSL**: Kotlin
-7. **Test Framework**: kotlin.test
-8. **New APIs**: Enabled (for latest features)
-
-### Setup Commands Used:
+## Quick Start
 
 ```bash
-# Update to latest Gradle
-sdk install gradle 9.0.0
-
-# Update to latest Kotlin (while keeping 2.1.0 for work projects)
-sdk install kotlin 2.2.0
-sdk use kotlin 2.2.0
-
-# Initialize the project
-gradle init
-```
-
-## 📁 Project Structure
-
-```
-my-app/
-├── app/                          # Main application module
-│   ├── build.gradle.kts         # Build configuration (Kotlin DSL)
-│   └── src/
-│       ├── main/kotlin/         # Your Kotlin source code
-│       │   └── org/example/App.kt
-│       ├── main/resources/      # Resources
-│       ├── test/kotlin/         # Test code
-│       │   └── org/example/AppTest.kt
-│       └── test/resources/      # Test resources
-├── settings.gradle.kts          # Project settings
-├── gradle.properties           # Gradle properties
-├── gradlew                     # Gradle wrapper (Unix)
-├── gradlew.bat                 # Gradle wrapper (Windows)
-└── README.md                   # This file
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Java 17+** (JDK 21 recommended)
-- **No need to install Gradle** - the project includes Gradle Wrapper
-
-### Running the Application
-
-```bash
-# Run the main application
+# Run with no arguments to see usage
 ./gradlew run
-```
 
-Expected output:
-```
-Hello World!
-```
+# Solve a single puzzle
+./gradlew run --args="530070000600195000098000060800060003400803001700020006060000280000419005000080079"
 
-### Running Tests
+# Solve multiple puzzles
+./gradlew run --args="530070000... 005300000..."
 
-```bash
-# Run all tests
+# Run tests
 ./gradlew test
 ```
 
-### Building the Project
+## Features
 
+- ✅ **Backtracking algorithm** - Efficient solver using recursive backtracking
+- ✅ **Multiple puzzle support** - Solve one or more puzzles in a single run
+- ✅ **Statistics tracking** - View steps, backtracks, and solving time
+- ✅ **Error handling** - Graceful handling of invalid or unsolvable puzzles
+- ✅ **Immutable solving** - Original puzzle is never modified
+- ✅ **Comprehensive tests** - Full test coverage for solver and CLI
+
+## Usage
+
+### Input Format
+
+Puzzles must be provided as 81-character strings:
+- Use digits `1-9` for filled cells
+- Use `0` for empty cells
+- Characters are read left-to-right, top-to-bottom
+
+**Example puzzle:**
+```
+5 3 0 | 0 7 0 | 0 0 0
+6 0 0 | 1 9 5 | 0 0 0
+...
+```
+Becomes: `530070000600195000...`
+
+### CLI Examples
+
+**Show help:**
 ```bash
-# Clean and build the project
-./gradlew clean build
+./gradlew run
 ```
 
-### Other Useful Commands
-
+**Solve an easy puzzle:**
 ```bash
-# View project dependencies
-./gradlew dependencies
-
-# View available tasks
-./gradlew tasks
-
-# Generate distribution archives
-./gradlew assembleDist
+./gradlew run --args="530070000600195000098000060800060003400803001700020006060000280000419005000080079"
 ```
 
-## 🔧 Development Setup
+**Output:**
+```
+Original Puzzle:
+5 3 0 | 0 7 0 | 0 0 0
+6 0 0 | 1 9 5 | 0 0 0
+...
 
-### IntelliJ IDEA
+✓ Solved!
 
-1. **Open IntelliJ IDEA**
-2. **File** → **Open**
-3. **Select the project directory** (`/path/to/your/project`)
-4. **IntelliJ will automatically detect** it as a Gradle project and import it
-5. **Wait for Gradle sync** to complete
+Solution:
+5 3 4 | 6 7 8 | 9 1 2
+6 7 2 | 1 9 5 | 3 4 8
+...
 
-The IDE will automatically configure:
-- Kotlin plugin
-- Gradle integration
-- Java 21 SDK
-- Project structure
-
-### VS Code
-
-1. **Install extensions**:
-   - Kotlin Language
-   - Gradle for Java
-2. **Open the project directory**
-3. **Run Gradle sync** when prompted
-
-## ⚡ Performance Features
-
-This project includes several performance optimizations enabled by default:
-
-- **Configuration Cache**: Speeds up subsequent builds
-- **Build Cache**: Reuses outputs from previous builds
-- **Parallel Execution**: Runs tasks in parallel when possible
-
-These are configured in `gradle.properties`:
-```properties
-org.gradle.configuration-cache=true
-org.gradle.parallel=true
-org.gradle.caching=true
+Stats:
+  Empty cells: 51
+  Steps taken: 8365
+  Backtracks:  4157
+  Time:        29ms
 ```
 
-## 🧪 Testing
+**Solve multiple puzzles:**
+```bash
+./gradlew run --args="530070000... 005300000... 200080300..."
+```
 
-The project uses **kotlin.test** framework for unit testing. Tests are located in:
-- `app/src/test/kotlin/org/example/AppTest.kt`
+## Architecture
 
-### Adding New Tests
+### Core Components
 
-Create new test files in the `app/src/test/kotlin/` directory following the same package structure as your source code.
+```
+org.example.sudoko/
+├── Puzzle.kt              # Main puzzle representation (data class)
+├── Cell.kt                # Cell with row, col, value
+├── State.kt               # Internal puzzle state management
+├── Solver.kt              # Solver interface with Outcome and Stats
+└── solvers/
+    └── BacktrackingSolver.kt  # Backtracking implementation
+```
 
-Example test:
+### Key Design Decisions
+
+**Immutability:**
+- `Puzzle` is a data class with immutable properties
+- `solve()` creates a copy before solving, preserving the original
+- State is recreated from string representation on copy
+
+**Outcome Pattern:**
 ```kotlin
-import kotlin.test.Test
-import kotlin.test.assertEquals
+sealed class Outcome {
+    data class Success(val solved: Puzzle, val stats: Stats) : Outcome()
+    data class Failure(val reason: String) : Outcome()
+}
+```
 
-class MyTest {
-    @Test 
-    fun `should do something`() {
-        // Test implementation
-        assertEquals(expected = "Hello", actual = "Hello")
+**Statistics:**
+```kotlin
+data class Stats(
+    val empties: Int,
+    val steps: Int,
+    val backtracks: Int,
+    val durationMs: Long
+)
+```
+
+## Sudoku Solving Basics
+
+Sudoku is a constraint satisfaction problem, where you must assign values to empty cells under strict constraints:
+
+- Each row must have all digits from 1 to 9 once only.
+- Each column must have all digits from 1 to 9 once only.
+- Each 3x3 subgrid (called a box) must have all digits from 1 to 9 once only.
+
+Most simple Sudoku solvers follow this approach:
+
+- Scan the grid and record possible candidates for each empty cell that do not violate any constraints.
+- Fill in cells where only one candidate is possible (“forced entry” or “naked singles”).
+- For more difficult cases, apply logic to eliminate possible candidates from cells, sometimes using strategies such as
+  scanning for pairs/triples.
+
+## Implementation: Backtracking Algorithm
+
+This solver uses **backtracking**, the most common algorithm for Sudoku:
+
+### Algorithm Steps
+
+1. **Find empty cells** - Pre-compute all empty cells at the start
+2. **Try numbers 1-9** - For each empty cell, try placing valid numbers
+3. **Validate placement** - Check if the number is valid in the current row, column, and 3x3 box
+4. **Move forward** - If valid, move to the next empty cell
+5. **Backtrack** - If no valid numbers exist, backtrack to the previous cell and try the next number
+6. **Repeat** - Continue until all cells are filled or no solution exists
+
+### Key Implementation Details
+
+**Iterative approach with index tracking:**
+```kotlin
+while (index >= 0 && index < cells.size) {
+    stats.steps++
+    if (tryNumbers(puzzle, cells[index])) {
+        index++  // move forward
+    } else {
+        stats.backtracks++
+        index--  // backtrack
     }
 }
 ```
 
-## 📦 Dependencies
+**Smart number trying:**
+- Starts from the current cell value + 1 (not always from 1)
+- Enables proper backtracking by remembering where we left off
+- Resets cell to 0 when all numbers exhausted
 
-Current dependencies are managed in `app/build.gradle.kts`:
+**Validation:**
+- Checks entire row, column, and 3x3 box after each placement
+- Uses Set-based duplicate detection
+- Excludes empty cells (0) from validation
 
-- **Kotlin Standard Library**: Kotlin standard library (implementation)
-- **Kotlin Test (JUnit5)**: Kotlin test library with JUnit5 support
-- **JUnit Jupiter Engine**: JUnit5 test engine
-- **JUnit Jupiter Params**: Parameterized tests support
+### Performance Characteristics
 
-### Adding New Dependencies
-
-Add dependencies to `app/build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation("group:artifact:version")
-    testImplementation("group:test-artifact:version")
-}
-```
-
-## 🔄 Version Management
-
-If you need to switch Kotlin versions (useful for work projects):
-
-```bash
-# Switch to Kotlin 2.1.0 (work projects)
-sdk use kotlin 2.1.0
-
-# Switch back to Kotlin 2.2.0 (personal projects)  
-sdk use kotlin 2.2.0
-
-# Check available versions
-sdk list kotlin
-```
-
-## 🌱 Project Branches
-
-This repository uses a branch-based approach for different projects and experiments:
-
-### 🧩 SUDOKO
-
-**Branch**: `SUDOKO`  
-**Status**: ✅ Complete
-
-A full-featured Sudoku solver implementation with CLI interface.
-
-**Features:**
-- Backtracking algorithm implementation
-- Command-line solver supporting single and multiple puzzles
-- Statistics tracking (steps, backtracks, solve time)
-- Immutable puzzle solving (original puzzle preserved)
-- Comprehensive test coverage
-- Beautiful console output with puzzle visualization
-
-**Key Components:**
-- `Puzzle.kt` - Main puzzle representation (data class)
-- `BacktrackingSolver.kt` - Backtracking algorithm implementation
-- `App.kt` - CLI interface for solving puzzles
-- Outcome pattern with `Success`/`Failure` types
-- Stats tracking with performance metrics
-
-**Usage:**
-```bash
-git checkout SUDOKO
-./gradlew run --args="530070000600195000098000060800060003400803001700020006060000280000419005000080079"
-```
-
-**Performance:**
+**Time Complexity:** O(9^n) where n is the number of empty cells (worst case)  
+**Space Complexity:** O(n) for the empty cells array and recursion stack  
+**Typical Performance:**
 - Easy puzzles: ~8,000 steps, ~4,000 backtracks, <30ms
 - Medium puzzles: ~15,000 steps, ~7,000 backtracks, <50ms
 - Hard puzzles: ~50,000+ steps, ~25,000+ backtracks, <200ms
 
-See `app/README.md` on the SUDOKO branch for detailed documentation.
+## Testing
 
----
+The project includes comprehensive test coverage:
 
-### Future Branches
+### Solver Tests (`SolverTests.kt`)
 
-Planned explorations:
-- Graph algorithms (DFS, BFS, Dijkstra)
-- Dynamic programming challenges
-- Data structure implementations
-- Design pattern examples
+- **Parameterized tests** for Easy, Medium, and Hard puzzles
+- **Immutability test** verifying original puzzle is not mutated
+- **Stats validation** ensuring accurate tracking of steps, backtracks, and time
 
-## 📚 Learn More
+```bash
+./gradlew test --tests "SolverTests"
+```
 
-- [Kotlin Documentation](https://kotlinlang.org/docs/)
-- [Gradle User Guide](https://docs.gradle.org/current/userguide/)
-- [Building Kotlin Applications with Gradle](https://docs.gradle.org/9.0.0/samples/sample_building_kotlin_applications.html)
-- [kotlin.test Documentation](https://kotlinlang.org/docs/kotlin-test.html)
+### CLI Tests (`AppTest.kt`)
 
-## 🤝 Contributing
+- **Usage display** when no arguments provided
+- **Valid puzzle solving** with output verification
+- **Multiple puzzle handling**
+- **Error handling** for invalid inputs
+- **Unsolvable puzzle detection**
 
-1. **Fork the project**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add some amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
+```bash
+./gradlew test --tests "AppTest"
+```
 
----
+### Running All Tests
 
-**Happy Coding!** 🎉
+```bash
+./gradlew test
+```
+
+## Future Enhancements
+
+Possible improvements beyond the current backtracking implementation:
+
+**Optimization Techniques:**
+- **Constraint propagation** - Update candidates for entire rows/columns/grids whenever a choice is made
+- **Cell ordering** - Solve cells with fewest candidates first (Most Constrained Variable heuristic)
+- **Naked pairs/triples** - Eliminate candidates based on pattern recognition
+
+**Advanced Algorithms:**
+- **Dancing Links (DLX)** - Knuth's Algorithm X for exact cover problems
+- **SAT solvers** - Convert Sudoku to Boolean satisfiability problem
+- **Genetic algorithms** - Evolutionary approach for very hard puzzles
+
+**Features:**
+- Puzzle generation with difficulty ratings
+- Step-by-step solution visualization
+- Hint system for interactive solving
+- Support for variant Sudoku types (Killer, Samurai, etc.)
+
+## Resources
+
+[How To Solve Sudoku (NY Times)](https://www.nytimes.com/2023/03/02/crosswords/how-to-solve-sudoku.html)
+[Sudoku Rules](https://sudoku.com/sudoku-rules/)
+[Sudoku Solutions](https://www.sudoku-solutions.com)
+[Sudoku Techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle%2Fsudoku%2Ftechniques)
+[The Math Behind Sudoku](https://pi.math.cornell.edu/~mec/Summer2009/Mahmood/Solve.html)
+[9 Solving Sudoku With Graph Data Structures & Algorithms | Android Studio Tutorial Kotlin (YouTube)](https://www.youtube.com/watch?v=g6wLjN5VOx4)
+[How to Solve Sudoku (Penny Dell Puzzles)](https://www.pennydellpuzzles.com/wp-content/uploads/2019/03/How-to-Solve-Sudoku.pdf)
+[Pass Your Next Tech Interview With Valid Sudoku (YouTube)](https://www.youtube.com/watch?v=qPLYKr7HdKU)
+[Sudoku Wiki](https://www.sudokuwiki.org/sudoku.htm)
+[How I Finally Wrote a Sudoku Solver](https://dev.to/aspittel/how-i-finally-wrote-a-sudoku-solver-177g)
+[How to Solve Sudoku Puzzles - Sudoku Beginner Tutorial #1 (YouTube)](https://www.youtube.com/watch?v=IHGNMobRnJE)
+[I've Made A Sudoku Solver](https://www.reddit.com/r/Kotlin/comments/1k35r9r/ive_made_a_sudoku_solvergenerator_written_in/)
+[The Basics Of Killer Sudoku](https://artisanalsudoku.substack.com/p/the-basics-of-killer-sudoku)
+[14](https://www.youtube.com/watch?v=rONf7HVgMeo)
+[SWE Technical Interviews, Making The Case For Leetcode](https://blog.devgenius.io/swe-technical-interviews-making-the-case-for-leetcode-f4fec488281b)
