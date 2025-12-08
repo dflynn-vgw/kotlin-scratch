@@ -33,6 +33,9 @@ class Puzzle(
     /** Set the value at a specific cell (row 0-8, col 0-8) */
     fun setCell(cell: Cell) = state.setCell(cell)
 
+    /** Reset a specific cell to empty */
+    fun resetCell(cell: Cell) = state.setCell(cell.copyOf(State.EMPTY))
+
     /** Check if placing a number in a specific cell is valid according to Sudoku rules */
     fun isCellValid(cell: Cell): Boolean = isValidGroup(state.getRow(cell.row)) &&
         isValidGroup(state.getCol(cell.col)) &&

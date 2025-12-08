@@ -22,17 +22,17 @@ class BacktrackingSolver : Solver {
         val emptyCells = puzzle.getEmptyCells()
         var index = 0
 
-        while (index < emptyCells.size) {
+        while (index >= 0 && index < emptyCells.size) {
             val cell = emptyCells[index]
             if (tryNumbers(puzzle, cell)) {
-                index++
+                index++ // move to next empty cell
             } else {
-                index--
-                if (index < 0) return null // no solution
+                index-- // backtrack to previous cell
             }
         }
 
-        return if (puzzle.isSolved()) puzzle else null
+        // If all cells are filled and valid, return the solved puzzle (otherwise null, meaning unsolvable)
+        return if (index == emptyCells.size && puzzle.isSolved()) puzzle else null
     }
 
     /** Try placing numbers in the given cell, starting from the next possible number */
@@ -43,7 +43,7 @@ class BacktrackingSolver : Solver {
             if (puzzle.isCellValid(cell)) return true
         }
 
-        puzzle.setCell(cell.copyOf(0)) // reset on backtrack
+        puzzle.resetCell(cell) // reset cell on backtrack
         return false // dead end
     }
 }
