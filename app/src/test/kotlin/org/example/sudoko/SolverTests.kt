@@ -4,6 +4,7 @@ import org.example.sudoko.solvers.BacktrackingSolver
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class SolverTests {
@@ -21,10 +22,14 @@ class SolverTests {
         State.validateStateString(solvedStr)
 
         val puzzle = Puzzle(puzzleStr, BacktrackingSolver())
-        val solved = puzzle.solve()
+        val outcome = puzzle.solve()
         val expect = State.fromString(solvedStr).toPrettyString()
 
-        assertTrue(solved?.isSolved() ?: false)
-        assertEquals(expect, solved.toString())
+        assertIs<Solver.Outcome.Success>(outcome)
+        assertEquals(expect, outcome.solved.toString())
+        assertTrue(outcome.stats.steps > 0)
+        assertTrue(outcome.stats.durationMs > 0)
+        assertTrue(outcome.stats.backtracks >= 0)
+        assertEquals(puzzle.getEmptyCells().size, outcome.stats.empties)
     }
 }

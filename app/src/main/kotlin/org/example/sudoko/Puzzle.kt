@@ -3,9 +3,9 @@ package org.example.sudoko
 import org.example.sudoko.solvers.BacktrackingSolver
 
 /** A 9x9 Sudoku puzzle. Numbers 1-9 only*/
-class Puzzle(
+data class Puzzle(
     /** Initial state of the puzzle as a string of 81 characters (0 for empty cells) */
-    initialState: String = State.EMPTY_STATE_STRING,
+    private val initialState: String = State.EMPTY_STATE_STRING,
     /** Solver to use for solving the puzzle (default: BacktrackingSolver) */
     private val solver: Solver = BacktrackingSolver(),
 ) {
@@ -19,7 +19,7 @@ class Puzzle(
     fun isValid(): Boolean = validate() is Outcome.Success
 
     /** Attempt to solve the puzzle using the provided solver */
-    fun solve(): Puzzle? = solver.solve(this)
+    fun solve(): Solver.Outcome = solver.solve(this)
 
     /** Check if the puzzle is completely solved (all cells filled and valid) */
     fun isSolved() = !state.hasEmptyCells() && validate() is Outcome.Success

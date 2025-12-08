@@ -1,7 +1,6 @@
 package org.example.sudoko.solvers
 
 import org.example.sudoko.Cell
-import org.example.sudoko.Outcome
 import org.example.sudoko.Puzzle
 import org.example.sudoko.Solver
 
@@ -18,21 +17,29 @@ import org.example.sudoko.Solver
  * 7. If all numbers 1-9 have been tried and none lead to a solution, return null (unsolvable)
  *  */
 class BacktrackingSolver : Solver {
-    override fun solve(puzzle: Puzzle): Puzzle? {
-        val emptyCells = puzzle.getEmptyCells()
+    override fun solve(puzzle: Puzzle): Solver.Outcome {
+        val puzzl = puzzle.copy() // work on a copy to avoid mutating original
+        val cells = puzzl.getEmptyCells()
+        val stats = Solver.Stats(empties = cells.size)
         var index = 0
 
-        while (index >= 0 && index < emptyCells.size) {
-            val cell = emptyCells[index]
-            if (tryNumbers(puzzle, cell)) {
+        // Iterate through empty cells using backtracking
+        while (index >= 0 && index < cells.size) {
+            stats.steps++
+            if (tryNumbers(puzzl, cells[index])) {
                 index++ // move to next empty cell
             } else {
+                stats.backtracks++
                 index-- // backtrack to previous cell
             }
         }
 
-        // If all cells are filled and valid, return the solved puzzle (otherwise null, meaning unsolvable)
-        return if (index == emptyCells.size && puzzle.isSolved()) puzzle else null
+        // If all cells are filled and valid, return the solved puzzle (otherwise Failure(unsolvable))
+        return if (index == cells.size && puzzl.isSolved()) {
+            Solver.Outcome.Success(puzzl, stats.final())
+        } else {
+            Solver.Outcome.Failure("Puzzle is unsolvable")
+        }
     }
 
     /** Try placing numbers in the given cell, starting from the next possible number */
