@@ -1,19 +1,25 @@
-# Kotlin Scratch
+# Kotlin Scratch (with SpringBoot)
 
 A Kotlin playground repository for exploring various algorithms, data structures, and programming challenges. The main branch contains the core tech stack, while feature branches contain specific implementations and experiments.
 
 ## Branch Structure
 
+- **SPRINGB**: Spring Boot baseline — branch off this for Kotlin/SpringBoot APIs and background services.
 - **main**: Core tech stack and baseline project structure
 - **Feature branches**: Specific implementations and challenges (see [Project Branches](#-project-branches) below)
 
 ## 🛠️ Technology Stack
 
-- **Kotlin**: 2.2.0 (latest stable)
-- **Gradle**: 9.0.0 (latest stable) 
+- **Kotlin**: 2.2.21
 - **Java**: 21 (LTS)
-- **Testing**: kotlin.test framework
-- **Build Script**: Kotlin DSL (build.gradle.kts)
+- **Gradle**: 9.x (wrapper)
+- **Spring Boot**: 3.5.8
+- **Web**: Spring WebFlux (reactive)
+- **Data**: Spring Data R2DBC; PostgreSQL via `r2dbc-postgresql` with pooling (`r2dbc-pool`)
+- **JSON**: Jackson Module Kotlin
+- **Testing**: `spring-boot-starter-test`, Reactor Test, `kotlin.test`
+- **Build Script**: Kotlin DSL (`build.gradle.kts`)
+- **Profiles**: `api` (reactive web), `worker` (no web)
 
 ## 🏗️ How This Project Was Initialized
 
