@@ -11,6 +11,8 @@ on:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
+  # Manual Dispatch so you can click "run workflow" anytime
+  workflow_dispatch:
 
 jobs:
   build:
