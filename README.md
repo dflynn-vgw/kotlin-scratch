@@ -64,6 +64,31 @@ my-app/
 
 ## 🚀 Getting Started
 
+### Spring Boot baseline (SPRINGB)
+
+- Spring Boot: 3.5.8
+- WebFlux + R2DBC (Postgres driver + pool)
+- Java 21, Kotlin 2.2.x, Gradle 9
+
+Run API mode (WebFlux):
+
+```bash
+./gradlew :app:bootRun --args='--spring.profiles.active=api'
+# Test endpoint
+curl http://localhost:8080/hello
+```
+
+Run background worker (no web):
+
+```bash
+./gradlew :app:bootRun --args='--spring.profiles.active=worker'
+```
+
+Configure Postgres via environment variables or .env file used by your shell:
+- `R2DBC_URL` (default: r2dbc:pool:postgresql://localhost:5432/app)
+- `DB_USERNAME` (default: postgres)
+- `DB_PASSWORD` (default: postgres)
+
 ### Prerequisites
 
 - **Java 17+** (JDK 21 recommended)

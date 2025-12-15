@@ -1,27 +1,42 @@
 plugins {
-    // Apply the Kotlin JVM plugin to add support for Kotlin.
+    // Kotlin + Spring
     alias(libs.plugins.kotlin.jvm)
-    // Apply the Versions plugin to allow checking for dependency updates.
+    alias(libs.plugins.kotlin.spring)
+
+    // Spring Boot + Dependency Management
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.dependency.management)
+
+    // Tooling
     alias(libs.plugins.versions)
-    // Apply the Spotless plugin to allow code formatting.
     alias(libs.plugins.spotless)
-    // Apply the application plugin to add support for building a CLI application in Java.
-    application
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
 
 dependencies {
-    // Using version catalog aliases
+    // Kotlin
     implementation(libs.kotlin.stdlib)
+    implementation(kotlin("reflect"))
 
-    // Test dependencies with consistent framework
-    testImplementation(libs.kotlin.test.junit5) // Kotlin test library with JUnit 5 support
-    testImplementation(libs.junit.jupiter.engine) // JUnit 5 test engine
-    testImplementation(libs.junit.jupiter.params) // JUnit 5 parameterized tests and CSV support
+    // Spring Boot starters
+    implementation(libs.spring.boot.starter) // allows non-web apps
+    implementation(libs.spring.boot.starter.webflux) // reactive web (API)
+    implementation(libs.spring.boot.starter.data.r2dbc) // reactive Postgres access
+
+    // R2DBC driver + pool
+    runtimeOnly(libs.r2dbc.postgresql)
+    implementation(libs.r2dbc.pool)
+
+    // JSON Kotlin support
+    implementation(libs.jackson.module.kotlin)
+
+    // Tests
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.reactor.test)
+    testImplementation(libs.kotlin.test.junit5)
 }
 
 testing {
@@ -35,16 +50,18 @@ testing {
     }
 }
 
-// Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-application {
-    // Define the main class for the application.
-    mainClass = "org.example.AppKt"
+springBoot {
+    mainClass.set("org.example.AppKt")
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
+    mainClass.set("org.example.AppKt")
 }
 
 // Spotless configuration
@@ -60,15 +77,13 @@ spotless {
 }
 
 tasks.test {
-    // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
-// Configure Kotlin compilation tasks.
+
+// Kotlin compiler options
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        // Set the JVM target to 21.
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-        // Enable strict nullability checks for Java interop.
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }

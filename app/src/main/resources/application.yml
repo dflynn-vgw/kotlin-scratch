@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: kotlin-spring-boot-baseline
+
+  r2dbc:
+    # Example URL using connection pool
+    # Format: r2dbc:pool:postgresql://<host>:<port>/<database>
+    url: ${R2DBC_URL:r2dbc:pool:postgresql://localhost:5432/app}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  # Default profile is 'api' for WebFlux APIs
+  profiles:
+    default: api
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+# API profile: reactive web application
+spring:
+  config:
+    activate:
+      on-profile: api
+  main:
+    web-application-type: reactive
+
+---
+# Worker profile: background service without any web server
+spring:
+  config:
+    activate:
+      on-profile: worker
+  main:
+    web-application-type: none
