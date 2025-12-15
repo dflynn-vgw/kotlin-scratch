@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-commit hook: auto-fix Kotlin formatting via Spotless and block commit on failure.
+# - Temporarily stashes unstaged changes so only staged files are affected
+# - Runs :app:spotlessApply to fix formatting
+# - Re-stages only the files that were originally staged
+# - Verifies with :app:spotlessCheck
+
+if [ ! -x "./gradlew" ]; then
+  echo "[pre-commit] gradlew not found or not executable; skipping formatting hook." >&2
+  exit 0
+fi
+
+# Collect originally staged files (NUL-delimited)
+mapfile -d '' STAGED_FILES < <(git diff --name-only --cached -z)
+
+# If nothing staged, nothing to do
+if [ ${#STAGED_FILES[@]} -eq 0 ]; then
+  exit 0
+fi
+
+# Stash unstaged changes (keep index) so we don't format un-staged work
+STASH_MADE=0
+if ! git diff --quiet; then
+  git stash push -u -k -q -m "pre-commit-spotless"
+  STASH_MADE=1
+fi
+
+cleanup() {
+  # Restore unstaged changes
+  if [ "$STASH_MADE" -eq 1 ]; then
+    # 'stash pop' may merge; if it fails, leave a message but don't hide the error code
+    if ! git stash pop -q; then
+      echo "[pre-commit] Warning: could not automatically re-apply unstaged changes; please resolve manually." >&2
+    fi
+  fi
+}
+trap cleanup EXIT
+
+# Apply formatting fixes for the app module
+./gradlew --no-daemon --console=plain -q :app:spotlessApply || {
+  echo "[pre-commit] spotlessApply failed." >&2
+  exit 1
+}
+
+# Re-stage only the files that were already staged
+if [ ${#STAGED_FILES[@]} -gt 0 ]; then
+  git add -- "${STAGED_FILES[@]}"
+fi
+
+# Verify formatting
+./gradlew --no-daemon --console=plain -q :app:spotlessCheck || {
+  echo "[pre-commit] Formatting check failed. Please review and commit again." >&2
+  exit 1
+}
+
+exit 0
