@@ -51,11 +51,11 @@ application {
 spotless {
     kotlin {
         target("**/*.kt")
-        ktlint("1.7.1")
+        ktlint("1.8.0")
     }
     kotlinGradle {
         target("*.gradle.kts")
-        ktlint("1.7.1")
+        ktlint("1.8.0")
     }
 }
 
