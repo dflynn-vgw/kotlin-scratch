@@ -48,6 +48,7 @@ object App {
                     println()
                     printStats(outcome.stats)
                 }
+
                 is Solver.Outcome.Failure -> {
                     println("✗ Failed: ${outcome.reason}")
                 }
