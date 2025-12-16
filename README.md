@@ -1,10 +1,10 @@
-# Kotlin Scratch (with SpringBoot)
+# Kotlin Scratch (with SpringBoot Multi-Module)
 
-A Kotlin playground repository for exploring various algorithms, data structures, and programming challenges. The main branch contains the core tech stack, while feature branches contain specific implementations and experiments.
+A Kotlin / Spring Boot Multi-Module project for exploring various applications and challenges that showcase the power of Kotlin / Spring Boot with a reference multi-module setup.
 
 ## Branch Structure
 
-- **SPRINGB**: Spring Boot baseline — branch off this for Kotlin/SpringBoot APIs and background services.
+- **SPRINGB-MULTI**: Spring Boot baseline — branch off this for Kotlin/SpringBoot APIs and background services.
 - **main**: Core tech stack and baseline project structure
 - **Feature branches**: Specific implementations and challenges (see [Project Branches](#-project-branches) below)
 
@@ -40,11 +40,11 @@ This project was created using Gradle's interactive `init` command with the foll
 
 ```bash
 # Update to latest Gradle
-sdk install gradle 9.0.0
+sdk install gradle 9.x
 
-# Update to latest Kotlin (while keeping 2.1.0 for work projects)
-sdk install kotlin 2.2.0
-sdk use kotlin 2.2.0
+# Update to latest Kotlin
+sdk install kotlin 2.1.x
+sdk use kotlin 2.1.x
 
 # Initialize the project
 gradle init
@@ -346,6 +346,8 @@ Spring Boot versions are managed by the BOM - no version needed:
 implementation(libs.spring.boot.starter.webflux)  // Version from Spring Boot 3.5.8
 ```
 
+See [DEPS.md](docs/DEPS.md) for more details.
+
 ## 🔄 Version Management
 
 If you need to switch Kotlin versions (useful for work projects):
@@ -361,55 +363,6 @@ sdk use kotlin 2.2.0
 sdk list kotlin
 ```
 
-## 🌱 Project Branches
-
-This repository uses a branch-based approach for different projects and experiments:
-
-### 🧩 SUDOKO
-
-**Branch**: `SUDOKO`  
-**Status**: ✅ Complete
-
-A full-featured Sudoku solver implementation with CLI interface.
-
-**Features:**
-- Backtracking algorithm implementation
-- Command-line solver supporting single and multiple puzzles
-- Statistics tracking (steps, backtracks, solve time)
-- Immutable puzzle solving (original puzzle preserved)
-- Comprehensive test coverage
-- Beautiful console output with puzzle visualization
-
-**Key Components:**
-- `Puzzle.kt` - Main puzzle representation (data class)
-- `BacktrackingSolver.kt` - Backtracking algorithm implementation
-- `App.kt` - CLI interface for solving puzzles
-- Outcome pattern with `Success`/`Failure` types
-- Stats tracking with performance metrics
-
-**Usage:**
-```bash
-git checkout SUDOKO
-./gradlew run --args="530070000600195000098000060800060003400803001700020006060000280000419005000080079"
-```
-
-**Performance:**
-- Easy puzzles: ~8,000 steps, ~4,000 backtracks, <30ms
-- Medium puzzles: ~15,000 steps, ~7,000 backtracks, <50ms
-- Hard puzzles: ~50,000+ steps, ~25,000+ backtracks, <200ms
-
-See `app/README.md` on the SUDOKO branch for detailed documentation.
-
----
-
-### Future Branches
-
-Planned explorations:
-- Graph algorithms (DFS, BFS, Dijkstra)
-- Dynamic programming challenges
-- Data structure implementations
-- Design pattern examples
-
 ## 📚 Learn More
 
 - [Kotlin Documentation](https://kotlinlang.org/docs/)
@@ -424,6 +377,8 @@ Planned explorations:
 3. **Commit your changes** (`git commit -m 'Add some amazing feature'`)
 4. **Push to the branch** (`git push origin feature/amazing-feature`)
 5. **Open a Pull Request**
+
+See [CONTRIB.md](CONTRIB.md) for more details.
 
 ---
 
