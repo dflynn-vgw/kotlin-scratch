@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Pre-commit hook: auto-fix Kotlin formatting via Spotless and block commit on failure.
 # - Temporarily stashes unstaged changes so only staged files are affected
-# - Runs :app:spotlessApply to fix formatting
+# - Runs spotlessApply to fix formatting across all modules
 # - Re-stages only the files that were originally staged
-# - Verifies with :app:spotlessCheck
+# - Verifies with spotlessCheck
 
 if [ ! -x "./gradlew" ]; then
   echo "[pre-commit] gradlew not found or not executable; skipping formatting hook." >&2
@@ -38,19 +38,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Apply formatting fixes for the app module
-./gradlew --no-daemon --console=plain -q :app:spotlessApply || {
+# Apply formatting fixes for all modules
+./gradlew --no-daemon --console=plain -q spotlessApply || {
   echo "[pre-commit] spotlessApply failed." >&2
   exit 1
 }
 
 # Re-stage only the files that were already staged
 if [ ${#STAGED_FILES[@]} -gt 0 ]; then
-  git add -- "${STAGED_FILES[@]}"
+  for file in "${STAGED_FILES[@]}"; do
+    if [ -e "$file" ]; then
+      git add -- "$file"
+    fi
+  done
 fi
 
 # Verify formatting
-./gradlew --no-daemon --console=plain -q :app:spotlessCheck || {
+./gradlew --no-daemon --console=plain -q spotlessCheck || {
   echo "[pre-commit] Formatting check failed. Please review and commit again." >&2
   exit 1
 }

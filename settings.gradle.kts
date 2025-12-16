@@ -12,4 +12,11 @@ plugins {
 }
 
 rootProject.name = "my-app"
-include("app")
+
+include(
+    "app:core",
+    "app:domn",
+    "app:intg",
+    "app:http",
+    "app:wrkr"
+)

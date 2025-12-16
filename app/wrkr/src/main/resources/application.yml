@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: kotlin-spring-boot-worker
+
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:pool:postgresql://localhost:5432/app}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  main:
+    web-application-type: none
+
+logging:
+  level:
+    org.example.wrkr: INFO

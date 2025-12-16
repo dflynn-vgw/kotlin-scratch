@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: kotlin-spring-boot-http
+
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:pool:postgresql://localhost:5432/app}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  main:
+    web-application-type: reactive
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -10,7 +10,7 @@ A Kotlin playground repository for exploring various algorithms, data structures
 
 ## 🛠️ Technology Stack
 
-- **Kotlin**: 2.2.21
+- **Kotlin**: 2.1.0
 - **Java**: 21 (LTS)
 - **Gradle**: 9.x (wrapper)
 - **Spring Boot**: 3.5.8
@@ -19,7 +19,7 @@ A Kotlin playground repository for exploring various algorithms, data structures
 - **JSON**: Jackson Module Kotlin
 - **Testing**: `spring-boot-starter-test`, Reactor Test, `kotlin.test`
 - **Build Script**: Kotlin DSL (`build.gradle.kts`)
-- **Profiles**: `api` (reactive web), `worker` (no web)
+- **Architecture**: Multi-module with Onion Architecture principles
 
 ## 🏗️ How This Project Was Initialized
 
@@ -50,93 +50,172 @@ gradle init
 
 ## 📁 Project Structure
 
+### Multi-Module Architecture
+
+The project follows **Onion Architecture** principles with proper Inversion of Control (IoC):
+
 ```
 my-app/
-├── app/                          # Main application module
-│   ├── build.gradle.kts         # Build configuration (Kotlin DSL)
-│   └── src/
-│       ├── main/kotlin/         # Your Kotlin source code
-│       │   └── org/example/App.kt
-│       ├── main/resources/      # Resources
-│       ├── test/kotlin/         # Test code
-│       │   └── org/example/AppTest.kt
-│       └── test/resources/      # Test resources
-├── settings.gradle.kts          # Project settings
-├── gradle.properties           # Gradle properties
-├── gradlew                     # Gradle wrapper (Unix)
-├── gradlew.bat                 # Gradle wrapper (Windows)
-└── README.md                   # This file
+├── app/
+│   ├── core/                    # Core utilities (no Spring deps)
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/
+│   │       └── org/example/core/
+│   │           └── Result.kt    # Functional result type
+│   │
+│   ├── domn/                    # Domain layer (business logic)
+│   │   ├── build.gradle.kts     # Depends on: core
+│   │   └── src/main/kotlin/
+│   │       └── org/example/domn/
+│   │           └── Greeting.kt  # Domain models
+│   │
+│   ├── intg/                    # Integration layer (infrastructure)
+│   │   ├── build.gradle.kts     # Depends on: domn, core
+│   │   └── src/main/kotlin/
+│   │       └── org/example/intg/
+│   │           └── R2dbcConfig.kt  # R2DBC setup
+│   │
+│   ├── http/                    # HTTP/WebFlux layer (API)
+│   │   ├── build.gradle.kts     # Depends on: intg, domn, core
+│   │   └── src/
+│   │       ├── main/kotlin/
+│   │       │   └── org/example/http/
+│   │       │       ├── HttpApplication.kt
+│   │       │       └── HelloController.kt
+│   │       └── main/resources/
+│   │           └── application.yml
+│   │
+│   └── wrkr/                    # Worker layer (background services)
+│       ├── build.gradle.kts     # Depends on: intg, domn, core
+│       └── src/
+│           ├── main/kotlin/
+│           │   └── org/example/wrkr/
+│           │       ├── WorkerApplication.kt
+│           │       └── GreetingTask.kt  # Scheduled tasks
+│           └── main/resources/
+│               └── application.yml
+│
+├── build.gradle.kts             # Root build with plugin management
+├── settings.gradle.kts          # Multi-module settings
+├── gradle.properties            # Gradle properties
+├── gradlew                      # Gradle wrapper (Unix)
+├── gradlew.bat                  # Gradle wrapper (Windows)
+└── README.md                    # This file
 ```
+
+### Dependency Direction (IoC)
+
+Upper layers can access any lower layer directly (not strict layering):
+
+```
+http/wrkr → intg, domn, core
+intg     → domn, core
+domn     → core
+core     → (no dependencies)
+```
+
+**Example**: The `http` layer can use utilities from `core` directly without going through `domn`.
+
+### Module Responsibilities
+
+- **app:core** - Pure utilities with zero Spring dependencies (Result types, extensions, helpers)
+- **app:domn** - Domain models, value objects, CQRS commands/queries, pure business logic
+- **app:intg** - Infrastructure (R2DBC repos, external service clients, PostgreSQL-specific code)
+- **app:http** - WebFlux controllers, REST request/response models, HTTP API entrypoint
+- **app:wrkr** - Scheduled tasks, background processors, worker entrypoint (no web server)
 
 ## 🚀 Getting Started
 
-### Spring Boot baseline (SPRINGB)
-
-- Spring Boot: 3.5.8
-- WebFlux + R2DBC (Postgres driver + pool)
-- Java 21, Kotlin 2.2.x, Gradle 9
-
-Run API mode (WebFlux):
-
-```bash
-./gradlew :app:bootRun --args='--spring.profiles.active=api'
-# Test endpoint
-curl http://localhost:8080/hello
-```
-
-Run background worker (no web):
-
-```bash
-./gradlew :app:bootRun --args='--spring.profiles.active=worker'
-```
-
-Configure Postgres via environment variables or .env file used by your shell:
-- `R2DBC_URL` (default: r2dbc:pool:postgresql://localhost:5432/app)
-- `DB_USERNAME` (default: postgres)
-- `DB_PASSWORD` (default: postgres)
-
 ### Prerequisites
 
-- **Java 17+** (JDK 21 recommended)
+- **Java 21** (LTS)
 - **No need to install Gradle** - the project includes Gradle Wrapper
-
-### Running the Application
-
-```bash
-# Run the main application
-./gradlew run
-```
-
-Expected output:
-```
-Hello World!
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-./gradlew test
-```
 
 ### Building the Project
 
 ```bash
-# Clean and build the project
+# Clean and build all modules
 ./gradlew clean build
+
+# Build specific module
+./gradlew :app:http:build
+```
+
+### Running the HTTP API (app:http)
+
+Runs a reactive WebFlux API server:
+
+```bash
+./gradlew :app:http:bootRun
+```
+
+Test the endpoint:
+```bash
+curl http://localhost:8080/hello
+# Response: {"message":"Hello, Spring WebFlux!","status":"ok"}
+
+# With query parameter
+curl "http://localhost:8080/hello?name=Kotlin"
+# Response: {"message":"Hello, Kotlin!","status":"ok"}
+```
+
+### Running the Worker (app:wrkr)
+
+Runs background services without a web server:
+
+```bash
+./gradlew :app:wrkr:bootRun
+```
+
+The worker logs scheduled tasks every 30 seconds:
+```
+Scheduled task: Hello, Worker! [ok]
+```
+
+### Database Configuration
+
+Configure PostgreSQL via environment variables:
+
+```bash
+export R2DBC_URL="r2dbc:pool:postgresql://localhost:5432/mydb"
+export DB_USERNAME="myuser"
+export DB_PASSWORD="mypass"
+```
+
+Defaults (if not set):
+- `R2DBC_URL`: `r2dbc:pool:postgresql://localhost:5432/app`
+- `DB_USERNAME`: `postgres`
+- `DB_PASSWORD`: `postgres`
+
+### Running Tests
+
+```bash
+# Run all tests across all modules
+./gradlew test
+
+# Run tests for specific module
+./gradlew :app:http:test
+./gradlew :app:wrkr:test
 ```
 
 ### Other Useful Commands
 
 ```bash
-# View project dependencies
-./gradlew dependencies
+# View project structure
+./gradlew projects
+
+# View dependencies for a module
+./gradlew :app:http:dependencies
 
 # View available tasks
 ./gradlew tasks
 
-# Generate distribution archives
-./gradlew assembleDist
+# Format code with Spotless
+./gradlew spotlessApply
+
+# Generate executable JARs
+./gradlew :app:http:bootJar
+./gradlew :app:wrkr:bootJar
 ```
 
 ## 🔧 Development Setup
@@ -165,60 +244,104 @@ The IDE will automatically configure:
 
 ## ⚡ Performance Features
 
-This project includes several performance optimizations enabled by default:
+Configured in `gradle.properties`:
 
-- **Configuration Cache**: Speeds up subsequent builds
-- **Build Cache**: Reuses outputs from previous builds
-- **Parallel Execution**: Runs tasks in parallel when possible
-
-These are configured in `gradle.properties`:
-```properties
-org.gradle.configuration-cache=true
-org.gradle.parallel=true
-org.gradle.caching=true
-```
+- **Parallel Execution**: Runs tasks in parallel when possible (`org.gradle.parallel=true`)
+- **Configuration Cache**: Currently disabled due to Kotlin 2.1.0 compatibility with Gradle 9.x
+- **Build Cache**: Currently disabled
 
 ## 🧪 Testing
 
-The project uses **kotlin.test** framework for unit testing. Tests are located in:
-- `app/src/test/kotlin/org/example/AppTest.kt`
+The project uses:
+- **Spring Boot Test** for integration tests
+- **kotlin.test** with JUnit 5 for unit tests
+- **WebTestClient** for reactive HTTP endpoint testing
+- **Reactor Test** for reactive stream testing
 
-### Adding New Tests
+### Test Structure
 
-Create new test files in the `app/src/test/kotlin/` directory following the same package structure as your source code.
+Tests are organized by module:
+```
+app/
+├── core/src/test/kotlin/      # Core utility tests
+├── domn/src/test/kotlin/      # Domain model tests
+├── intg/src/test/kotlin/      # Integration tests
+├── http/src/test/kotlin/      # HTTP endpoint tests
+└── wrkr/src/test/kotlin/      # Worker task tests
+```
 
-Example test:
+### Example Tests
+
+HTTP endpoint test (app/http):
+```kotlin
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class HttpApplicationTest {
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `hello endpoint returns greeting`() {
+        webTestClient.get().uri("/hello")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.message").isEqualTo("Hello, Spring WebFlux!")
+            .jsonPath("$.status").isEqualTo("ok")
+    }
+}
+```
+
+Domain model test (app/domn):
 ```kotlin
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.example.domn.Greeting
 
-class MyTest {
-    @Test 
-    fun `should do something`() {
-        // Test implementation
-        assertEquals(expected = "Hello", actual = "Hello")
+class GreetingTest {
+    @Test
+    fun `greeting factory creates valid greeting`() {
+        val greeting = Greeting.hello("Kotlin")
+        assertEquals("Hello, Kotlin!", greeting.message)
+        assertEquals("ok", greeting.status)
     }
 }
 ```
 
 ## 📦 Dependencies
 
-Current dependencies are managed in `app/build.gradle.kts`:
+Dependencies are managed via Gradle version catalog (`gradle/libs.versions.toml`) and Spring Boot BOM.
 
-- **Kotlin Standard Library**: Kotlin standard library (implementation)
-- **Kotlin Test (JUnit5)**: Kotlin test library with JUnit5 support
-- **JUnit Jupiter Engine**: JUnit5 test engine
-- **JUnit Jupiter Params**: Parameterized tests support
+### Module Dependencies
+
+- **app:core**: Kotlin stdlib only (no external deps)
+- **app:domn**: core module
+- **app:intg**: domn, core, Spring Data R2DBC, R2DBC PostgreSQL, R2DBC Pool
+- **app:http**: intg, domn, core, Spring Boot Starter WebFlux, Jackson Kotlin
+- **app:wrkr**: intg, domn, core, Spring Boot Starter (no WebFlux)
 
 ### Adding New Dependencies
 
-Add dependencies to `app/build.gradle.kts`:
+1. Add version to `gradle/libs.versions.toml`:
+```toml
+[versions]
+my-lib = "1.0.0"
 
+[libraries]
+my-library = { module = "com.example:my-library", version.ref = "my-lib" }
+```
+
+2. Reference in module's `build.gradle.kts`:
 ```kotlin
 dependencies {
-    implementation("group:artifact:version")
-    testImplementation("group:test-artifact:version")
+    implementation(libs.my.library)
 }
+```
+
+### Spring Boot Managed Dependencies
+
+Spring Boot versions are managed by the BOM - no version needed:
+```kotlin
+implementation(libs.spring.boot.starter.webflux)  // Version from Spring Boot 3.5.8
 ```
 
 ## 🔄 Version Management
