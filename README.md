@@ -10,7 +10,7 @@ A Kotlin playground repository for exploring various algorithms, data structures
 
 ## 🛠️ Technology Stack
 
-- **Kotlin**: 2.1.0
+- **Kotlin**: 2.1.0 (see note below)
 - **Java**: 21 (LTS)
 - **Gradle**: 9.x (wrapper)
 - **Spring Boot**: 3.5.8
@@ -20,6 +20,8 @@ A Kotlin playground repository for exploring various algorithms, data structures
 - **Testing**: `spring-boot-starter-test`, Reactor Test, `kotlin.test`
 - **Build Script**: Kotlin DSL (`build.gradle.kts`)
 - **Architecture**: Multi-module with Onion Architecture principles
+
+> **Note on Kotlin 2.1.0**: This project uses Kotlin 2.1.0 instead of 2.2.x due to a known incompatibility between Kotlin 2.2.21 and Gradle 8.14/9.x when using multi-module projects with inter-module dependencies. The issue manifests as a `ClasspathEntrySnapshotter$Settings` error during incremental compilation of modules with `project()` dependencies. Single-module projects work fine with Kotlin 2.2.21, but multi-module setups require Kotlin 2.1.x until this is resolved in a future Kotlin or Gradle release.
 
 ## 🏗️ How This Project Was Initialized
 
