@@ -11,4 +11,9 @@ data class Meta (
     val createdAt: Epoch = now(),
     /** Additional context information as key-value pairs */
     val context: Map<String, Any> = emptyMap()
-)
+) {
+    companion object {
+        /** Default metadata instance with placeholder values */
+        val DEFAULT = Meta(createdBy = "system")
+    }
+}

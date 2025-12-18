@@ -5,9 +5,6 @@ import java.util.UUID
 /** Type alias for unique identifiers used across the application. */
 typealias Id = UUID
 
-/** Type alias for currency values in cents */
-typealias Cents = Long
-
 /** Type alias for epoch time in seconds (seconds from 1970-01-01) */
 typealias Epoch = Long
 
