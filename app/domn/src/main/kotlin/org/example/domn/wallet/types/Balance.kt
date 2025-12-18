@@ -9,6 +9,9 @@ data class Balance(
 ) {
     /** Credits the specified amount to the balance */
     fun credit(amount: Coin): Balance {
+        if (amount.value <= Cents.ZERO) {
+            return this
+        }
         return when (amount.type) {
             Coin.CoinType.GC -> this.copy(goldCoin = Coin(Coin.CoinType.GC, this.goldCoin.value + amount.value))
             Coin.CoinType.SC -> this.copy(sweepCoin = Coin(Coin.CoinType.SC, this.sweepCoin.value + amount.value))
@@ -17,6 +20,9 @@ data class Balance(
 
     /** Debits the specified amount from the balance (fails if insufficient balance for CoinType) */
     fun debit(amount: Coin): Result<Balance> {
+        if (amount.value <= Cents.ZERO) {
+            return Result.success(this)
+        }
         return when (amount.type) {
             Coin.CoinType.GC -> {
                 if (amount.value > this.goldCoin.value) {
