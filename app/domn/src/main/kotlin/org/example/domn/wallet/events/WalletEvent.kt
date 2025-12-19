@@ -12,10 +12,10 @@ sealed class WalletEvent(
     override val type: String,
     override val stream: String,
     override val version: Int,
-    override val snapshot: Wallet.Snapshot,
+    override val snapshot: Wallet,
     override val metadata: Meta,
     open val transaction: Transaction,
-) : Event<Wallet.Snapshot> {
+) : Event<Wallet> {
     init {
         require(version >= 0) { "Event version must be non-negative" }
     }
@@ -23,7 +23,7 @@ sealed class WalletEvent(
     /** Event representing the creation of a Wallet */
     data class WalletCreated(
         override val id: Id,
-        override val snapshot: Wallet.Snapshot,
+        override val snapshot: Wallet,
         override val metadata: Meta = Meta.DEFAULT,
         override val transaction: Transaction,
     ) : WalletEvent(
@@ -40,7 +40,7 @@ sealed class WalletEvent(
     data class WalletCredited(
         override val id: Id = Id.randomUUID(),
         override val version: Int,
-        override val snapshot: Wallet.Snapshot,
+        override val snapshot: Wallet,
         override val metadata: Meta = Meta.DEFAULT,
         override val transaction: Transaction,
     ) : WalletEvent(
@@ -57,7 +57,7 @@ sealed class WalletEvent(
     data class WalletDebited(
         override val id: Id = Id.randomUUID(),
         override val version: Int,
-        override val snapshot: Wallet.Snapshot,
+        override val snapshot: Wallet,
         override val metadata: Meta = Meta.DEFAULT,
         override val transaction: Transaction,
     ) : WalletEvent(

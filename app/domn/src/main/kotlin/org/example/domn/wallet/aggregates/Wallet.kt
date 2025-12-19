@@ -3,6 +3,7 @@ package org.example.domn.wallet.aggregates
 import org.example.core.types.Id
 import org.example.domn.common.Identifiable
 import org.example.domn.common.Snapshotable
+import org.example.domn.wallet.events.Event
 import org.example.domn.wallet.events.WalletEvent
 import org.example.domn.wallet.types.Balance
 import org.example.domn.wallet.types.Meta
@@ -17,7 +18,7 @@ class Wallet(
     /** Current balance of the wallet */
     val balance: Balance,
 
-    ) : Identifiable, Snapshotable {
+    ) : Identifiable, Aggregate<Wallet>() {
     init {
         require(version >= 0) { "Version must be non-negative" }
     }
@@ -40,7 +41,7 @@ class Wallet(
         apply(
             event = WalletEvent.WalletCredited(
                 version = wallet.version,
-                snapshot = wallet.snapshot(),
+                snapshot = wallet,
                 metadata = meta,
                 transaction = transaction,
             ), isNew = true
@@ -82,7 +83,7 @@ class Wallet(
                 apply(
                     event = WalletEvent.WalletDebited(
                         version = wallet.version,
-                        snapshot = wallet.snapshot(),
+                        snapshot = wallet,
                         metadata = meta,
                         transaction = transaction,
                     ), isNew = true
@@ -94,46 +95,34 @@ class Wallet(
         )
     }
 
-    /** Creates a snapshot of the current state of the Wallet */
-    override fun snapshot(): Snapshot = Snapshot(
-        id = this.id,
-        version = this.version,
-        balance = this.balance,
-    )
-
-    /** Data class representing a snapshot of the Wallet's state */
-    data class Snapshot(
-        override val id: Id,
-        val version: Int,
-        val balance: Balance,
-    ) : Identifiable
 
     /* ### Event Application (State Changes) ### */
-    private val uncommittedEvents = mutableListOf<WalletEvent>()
 
-    private fun apply(event: WalletEvent, isNew: Boolean = false): Wallet {
+    /** Applies an event to the Wallet aggregate, updating its state */
+    override fun apply(event: Event<Wallet>, isNew: Boolean): Wallet {
         val wallet = when (event) {
             is WalletEvent.WalletCreated -> create(event.id) /* New wallet creation */
             is WalletEvent.WalletCredited -> this.credit(event.transaction, event.metadata).getOrThrow()
             is WalletEvent.WalletDebited -> this.debit(event.transaction, event.metadata).getOrThrow()
+            else -> {
+                throw IllegalArgumentException("Unsupported event type: ${event.type}")
+            }
         }
 
         if (isNew) {
-            uncommittedEvents.add(event)
+            stage(event)
         }
 
         return wallet
 
     }
 
-    companion object {
-        /** Factory method to create a Wallet instance from a Snapshot */
-        fun fromSnapshot(snapshot: Snapshot): Wallet = Wallet(
-            id = snapshot.id,
-            version = snapshot.version,
-            balance = snapshot.balance
-        )
+    /** Saves a list of events to the event store (not yet implemented, called from commit()) */
+    override fun save(events: List<Event<Wallet>>): Result<Wallet> {
+        TODO("Not yet implemented")
+    }
 
+    companion object {
         /** Factory method to create a new Wallet instance */
         fun create(
             id: Id = Id.randomUUID(),
