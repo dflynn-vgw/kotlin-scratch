@@ -12,10 +12,6 @@ plugins {
     alias(libs.plugins.spotless)
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     // Kotlin
     implementation(libs.kotlin.stdlib)
