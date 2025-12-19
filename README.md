@@ -4,7 +4,8 @@ A Kotlin / Spring Boot Multi-Module project for exploring various applications a
 
 ## Branch Structure
 
-- **SPRINGB-MULTI**: Spring Boot baseline — branch off this for Kotlin/SpringBoot APIs and background services.
+- **SPRINGB-BASIC**: Simple Kotlin/Spring Boot setup with single project containing core dependencies for building non-web apps, reactive web apps (WebFlux), and reactive PostgreSQL access (R2DBC)
+- **SPRINGB-MULTI**: Multi-module Spring Boot project with layered architecture (core, domain, integration, http, worker)
 - **main**: Core tech stack and baseline project structure
 - **Feature branches**: Specific implementations and challenges (see [Project Branches](#-project-branches) below)
 
