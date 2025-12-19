@@ -6,10 +6,6 @@ plugins {
     alias(libs.plugins.spotless)
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     // Module dependencies - can access all lower layers
     implementation(project(":app:intg"))

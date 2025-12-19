@@ -4,10 +4,6 @@ plugins {
     alias(libs.plugins.dependency.management)
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.8")
