@@ -4,7 +4,7 @@ import org.example.core.types.Id
 import org.example.domn.common.Event
 import org.example.domn.wallet.aggregates.Wallet
 import org.example.domn.wallet.types.Coin
-import org.example.domn.wallet.types.Meta
+import org.example.domn.common.Meta
 import org.example.domn.wallet.types.Transaction
 import org.example.domn.wallet.types.Version
 

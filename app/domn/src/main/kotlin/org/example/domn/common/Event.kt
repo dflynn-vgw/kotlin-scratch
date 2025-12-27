@@ -1,7 +1,7 @@
 package org.example.domn.common
 
 import org.example.core.types.Id
-import org.example.domn.wallet.types.Meta
+import org.example.domn.common.Meta
 import org.example.domn.wallet.types.Version
 
 /** Generic interface representing an event associated with an aggregate snapshot of TSnapshot */

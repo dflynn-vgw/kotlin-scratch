@@ -1,4 +1,4 @@
-package org.example.domn.wallet.types
+package org.example.domn.common
 
 import org.example.core.types.Epoch
 import org.example.core.types.now

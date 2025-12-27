@@ -7,7 +7,7 @@ import org.example.domn.common.Snapshotable
 import org.example.domn.common.Event
 import org.example.domn.wallet.events.WalletEvent
 import org.example.domn.wallet.types.Balance
-import org.example.domn.wallet.types.Meta
+import org.example.domn.common.Meta
 import org.example.domn.wallet.types.Transaction
 import org.example.domn.wallet.types.Version
 
