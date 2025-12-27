@@ -1,6 +1,6 @@
 package org.example.domn.common
 
-/** Value class representing an Version (positive integer) */
+/** Value class representing a Version (positive integer) */
 @JvmInline
 value class Version(val value: Int = ZERO.value) {
   init {
