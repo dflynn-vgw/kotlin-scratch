@@ -6,7 +6,7 @@ import org.example.domn.wallet.aggregates.Wallet
 import org.example.domn.wallet.types.Coin
 import org.example.domn.common.Meta
 import org.example.domn.wallet.types.Transaction
-import org.example.domn.wallet.types.Version
+import org.example.domn.common.Version
 
 /** Sealed class representing events related to Wallet aggregates */
 sealed class WalletEvent(

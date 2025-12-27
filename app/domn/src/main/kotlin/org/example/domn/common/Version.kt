@@ -1,4 +1,4 @@
-package org.example.domn.wallet.types
+package org.example.domn.common
 
 /** Value class representing an Version (positive integer) */
 @JvmInline

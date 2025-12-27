@@ -1,7 +1,7 @@
 package org.example.domn.common
 
 import org.example.domn.common.Event
-import org.example.domn.wallet.types.Version
+import org.example.domn.common.Version
 
 /** Abstract base class for an aggregate root in an event-sourced system */
 abstract class Aggregate<T : Identifiable> {

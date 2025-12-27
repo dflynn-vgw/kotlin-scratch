@@ -2,7 +2,7 @@ package org.example.domn.common
 
 import org.example.core.types.Id
 import org.example.domn.common.Meta
-import org.example.domn.wallet.types.Version
+import org.example.domn.common.Version
 
 /** Generic interface representing an event associated with an aggregate snapshot of TSnapshot */
 interface Event<TSnapshot : Identifiable> : Identifiable {

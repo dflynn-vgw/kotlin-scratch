@@ -9,7 +9,7 @@ import org.example.domn.wallet.events.WalletEvent
 import org.example.domn.wallet.types.Balance
 import org.example.domn.common.Meta
 import org.example.domn.wallet.types.Transaction
-import org.example.domn.wallet.types.Version
+import org.example.domn.common.Version
 
 /** Represents a Wallet aggregate with an ID, associated transaction ID, version, and balance */
 class Wallet(
