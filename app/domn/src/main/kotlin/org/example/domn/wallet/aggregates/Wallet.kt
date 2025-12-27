@@ -4,7 +4,7 @@ import org.example.core.types.Id
 import org.example.domn.common.Aggregate
 import org.example.domn.common.Identifiable
 import org.example.domn.common.Snapshotable
-import org.example.domn.wallet.events.Event
+import org.example.domn.common.Event
 import org.example.domn.wallet.events.WalletEvent
 import org.example.domn.wallet.types.Balance
 import org.example.domn.wallet.types.Meta

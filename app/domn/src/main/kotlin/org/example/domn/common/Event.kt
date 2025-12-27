@@ -1,8 +1,6 @@
-package org.example.domn.wallet.events
+package org.example.domn.common
 
 import org.example.core.types.Id
-import org.example.domn.common.Identifiable
-import org.example.domn.common.Snapshotable
 import org.example.domn.wallet.types.Meta
 import org.example.domn.wallet.types.Version
 

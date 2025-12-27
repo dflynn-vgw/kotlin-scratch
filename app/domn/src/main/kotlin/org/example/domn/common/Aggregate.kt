@@ -1,6 +1,6 @@
 package org.example.domn.common
 
-import org.example.domn.wallet.events.Event
+import org.example.domn.common.Event
 import org.example.domn.wallet.types.Version
 
 /** Abstract base class for an aggregate root in an event-sourced system */
