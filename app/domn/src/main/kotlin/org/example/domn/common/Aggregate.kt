@@ -1,13 +1,12 @@
-package org.example.domn.wallet.aggregates
+package org.example.domn.common
 
-import org.example.domn.common.Identifiable
 import org.example.domn.wallet.events.Event
 import org.example.domn.wallet.types.Version
 
 /** Abstract base class for an aggregate root in an event-sourced system */
 abstract class Aggregate<T : Identifiable> {
   private val _events = mutableListOf<EventState<T>>()
-  private var _version: Version = Version.ZERO
+  private var _version: Version = Version.Companion.ZERO
   private var _snapshot: T? = null
 
   /** Applies an event to the aggregate, updating its state (overridden by subclass) */
@@ -62,7 +61,7 @@ abstract class Aggregate<T : Identifiable> {
 
   /** Represents the state of an event along with its commit status */
   data class EventState<T : Identifiable>(
-    val event: Event<T>,
-    val isCommited: Boolean = false,
+      val event: Event<T>,
+      val isCommited: Boolean = false,
   )
 }

@@ -1,6 +1,7 @@
 package org.example.domn.wallet.aggregates
 
 import org.example.core.types.Id
+import org.example.domn.common.Aggregate
 import org.example.domn.common.Identifiable
 import org.example.domn.common.Snapshotable
 import org.example.domn.wallet.events.Event
