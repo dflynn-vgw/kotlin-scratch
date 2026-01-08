@@ -1,6 +1,8 @@
-# Kotlin Scratch (with SpringBoot)
+# Spring Boot Worker Service Playground
 
-A Kotlin + Spring Boot playground repository for exploring various applications, patterns, algorithms, data structures, and programming challenges. The main branch contains the core tech stack, while feature branches contain specific implementations and experiments.
+A minimal Spring Boot worker service application (non-web) for experimenting with background processing, scheduled tasks, and reactive data access patterns using Kotlin, R2DBC, and PostgreSQL.
+
+This is a starting point and playground for building Spring Boot applications that don't need HTTP endpoints—perfect for background workers, batch processors, queue consumers, and scheduled jobs.
 
 ## Branch Structure
 
