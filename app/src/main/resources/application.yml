@@ -9,18 +9,19 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 
-  # Default profile is 'api' for WebFlux APIs
+  # Default profile is 'worker' for background processing
   profiles:
-    default: api
+    default: worker
 
-server:
-  port: ${SERVER_PORT:8080}
+# Server config only needed for API profile
+# server:
+#   port: ${SERVER_PORT:8080}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+# management:
+#   endpoints:
+#     web:
+#       exposure:
+#         include: health,info
 
 ---
 # API profile: reactive web application

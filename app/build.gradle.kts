@@ -19,7 +19,7 @@ dependencies {
 
     // Spring Boot starters
     implementation(libs.spring.boot.starter) // allows non-web apps
-    implementation(libs.spring.boot.starter.webflux) // reactive web (API)
+    // implementation(libs.spring.boot.starter.webflux) // reactive web (API) - commented out for worker mode
     implementation(libs.spring.boot.starter.data.r2dbc) // reactive Postgres access
 
     // R2DBC driver + pool
