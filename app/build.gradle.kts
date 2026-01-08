@@ -17,6 +17,9 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(kotlin("reflect"))
 
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+
     // Spring Boot starters
     implementation(libs.spring.boot.starter) // allows non-web apps
     // implementation(libs.spring.boot.starter.webflux) // reactive web (API) - commented out for worker mode
