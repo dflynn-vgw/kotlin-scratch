@@ -1,4 +1,4 @@
-package org.example.models
+package org.example.events
 
 import kotlinx.serialization.Serializable
 import java.util.UUID
