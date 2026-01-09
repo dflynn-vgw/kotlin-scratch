@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(kotlin("reflect"))
 
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
 
