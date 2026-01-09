@@ -1,4 +1,6 @@
-package org.example.events
+package org.example.events.storage
+
+import org.example.events.Event
 
 /** Essential event store operations: saving single or multiple events and reading events from a stream */
 interface EventStore {

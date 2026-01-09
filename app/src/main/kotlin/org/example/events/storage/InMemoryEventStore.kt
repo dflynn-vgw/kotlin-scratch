@@ -1,5 +1,6 @@
-package org.example.events
+package org.example.events.storage
 
+import org.example.events.Event
 import java.util.concurrent.ConcurrentHashMap
 
 /** In-memory implementation of the EventStore for testing or lightweight scenarios */
