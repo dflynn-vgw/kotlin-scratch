@@ -1,17 +1,14 @@
 package org.example.events.storage
 
-import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonValueFormat
 import kotlinx.coroutines.runBlocking
 import org.example.common.EventTypeListConverter
 import org.example.common.OrderEventBuilder
 import org.example.events.Event
-import org.example.events.OrderEvents
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.converter.ConvertWith
 import org.junit.jupiter.params.provider.CsvSource
-import java.util.UUID
 import kotlin.test.assertEquals
 
 class InMemoryEventStoreTests {
