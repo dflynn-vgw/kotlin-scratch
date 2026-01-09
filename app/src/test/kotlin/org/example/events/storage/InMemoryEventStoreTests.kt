@@ -25,8 +25,12 @@ class InMemoryEventStoreTests {
     @CsvSource(
         delimiter = '|',
         textBlock =
-        """#SCENARIO                    | ORDER_ID | CUSTOMER_ID   | SEED_EVENTS                                      | SAVE_EVENTS        | READ_FROM  | READ_EVENTS
-            Basic Save and Read         | 00000001 | d.fly@acme.co | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]  | [ORDER_CANCELLED]  | 1          | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED, ORDER_CANCELLED]""",
+        """#SCENARIO                                | ORDER_ID | CUSTOMER_ID   | SEED_EVENTS                                      | SAVE_EVENTS                                      | READ_FROM  | READ_EVENTS
+            Seed(0) + Save(0) + From(1) = Read(1)   | 00000000 | a.bee@acme.co | []                                               | []                                               | 1          | []
+            Seed(0) + Save(3) + From(1) = Read(3)   | 00000001 | b.cee@acme.co | []                                               | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]  | 1          | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]
+            Seed(3) + Save(0) + From(1) = Read(3)   | 00000002 | c.dee@acme.co | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]  | []                                               | 1          | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]
+            Seed(3) + Save(1) + From(1) = Read(4)   | 00000003 | d.eee@acme.co | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]  | [ORDER_CANCELLED]                                | 1          | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED, ORDER_CANCELLED]
+            Seed(3) + Save(1) + From(4) = Read(1)   | 00000004 | e.fff@acme.co | [ORDER_PLACED, ORDER_MODIFIED, ORDER_CONFIRMED]  | [ORDER_CANCELLED]                                | 4          | [ORDER_CANCELLED]""",
     )
     @DisplayName("Scenarios for InMemoryEventStore")
     fun scenarios(
