@@ -4,11 +4,11 @@ import org.example.events.Event
 import java.util.concurrent.ConcurrentHashMap
 
 /** In-memory implementation of the EventStore for testing or lightweight scenarios */
-class InMemoryEventStore(
+open class InMemoryEventStore(
     seedEvents: List<Event<Any>> = emptyList(),
 ) : EventStore {
     // In-memory store mapping stream IDs to their respective events (thread-safe)
-    private val store = ConcurrentHashMap<String, MutableList<Event<Any>>>()
+    protected val store = ConcurrentHashMap<String, MutableList<Event<Any>>>()
 
     init {
         // Seed the store with initial events if provided
