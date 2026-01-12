@@ -25,6 +25,7 @@ class SpscCoordinator(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val isRunning = AtomicBoolean(false)
+    private val producerFinished = AtomicBoolean(false)
     private val queue = SpscQueue<StreamedEvent>(config.maxQueueDepth)
     private val executor = Executors.newFixedThreadPool(2)
     private var producerFuture: java.util.concurrent.Future<*>? = null
@@ -133,6 +134,7 @@ class SpscCoordinator(
                 }
             }
             logger.info("Producer finished - total events produced: {}", totalEventCount)
+            producerFinished.set(true)
         } catch (e: Exception) {
             logger.error("Producer error", e)
             if (isRunning.get()) {
@@ -158,6 +160,10 @@ class SpscCoordinator(
                     } else if (!isRunning.get()) {
                         logger.debug("Consumer stopping")
                         return // Coordinator stopping
+                    } else if (producerFinished.get()) {
+                        // Producer finished and queue is empty, consumer can exit
+                        logger.debug("Consumer exiting - producer finished and queue empty")
+                        return
                     }
                     // If queue empty and we haven't collected any events yet, loop again
                 }
@@ -166,8 +172,11 @@ class SpscCoordinator(
                     logger.debug("Consumer processing batch of {} events", batch.size)
                     try {
                         // Consume the batch of streamed events
+                        logger.debug("Consumer: calling consume()")
                         runBlocking {
+                            logger.debug("Consumer: inside runBlocking")
                             consumer.consume(batch)
+                            logger.debug("Consumer: consume() returned")
                         }
                         logger.debug("Consumer batch processed successfully")
 
