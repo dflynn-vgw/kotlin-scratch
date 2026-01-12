@@ -1,19 +1,22 @@
 package org.example.spsc
 
-import org.example.events.Event
-import org.example.events.storage.Bookmark
+import org.example.events.storage.StreamedEvent
 
 /**
- * Consumes events from the SPSC queue.
- * Receives a batch of events and the current bookmark position.
+ * Consumes positioned events from the SPSC queue.
+ * Receives a batch of StreamedEvent items, each with its position in the stream.
  * Must complete successfully to advance the bookmark (on failure, bookmark is not advanced).
  */
 fun interface EventConsumer {
     /**
-     * Process a batch of events.
-     * @param events the batch of events to consume
-     * @param bookmark the current bookmark position (before consuming these events)
+     * Process a batch of positioned events.
+     * @param streamedEvents the batch of events with their stream positions
      * @throws Exception to indicate failure - bookmark will NOT be advanced
+     *
+     * The consumer can calculate the next bookmark position as:
+     * ```kotlin
+     * val nextPosition = streamedEvents.maxOf { it.offset.position } + 1L
+     * ```
      */
-    suspend fun consume(events: List<Event<Any>>, bookmark: Bookmark)
+    suspend fun consume(streamedEvents: List<StreamedEvent>)
 }

@@ -1,23 +1,38 @@
 package org.example.spsc
 
 import kotlinx.coroutines.flow.Flow
-import org.example.events.Event
+import kotlinx.coroutines.flow.flow
 import org.example.events.storage.EventStream
+import org.example.events.storage.StreamOffset
+import org.example.events.storage.StreamedEvent
 
 /**
- * Produces events from an EventStream.
+ * Produces positioned events from an EventStream.
  *
- * The producer is responsible for streaming events from a given position.
+ * The producer is responsible for streaming events from a given position and
+ * wrapping each event with its position in the stream (StreamedEvent).
  * The returned Flow respects the batch size parameter, emitting at most batchSize events.
  * Batch sizing is performed by the EventStream implementation.
  *
- * The default implementation simply delegates to EventStream.stream(), allowing
- * custom implementations to add filtering, transformation, or other logic.
+ * Each emitted StreamedEvent includes the event and its StreamOffset, enabling consumers
+ * to be position-aware and implement exactly-once semantics.
  */
 interface EventProducer {
     suspend fun produce(
         eventStream: EventStream,
         fromPosition: Long,
         batchSize: Int,
-    ): Flow<Event<Any>> = eventStream.stream(fromPosition, batchSize)
+    ): Flow<StreamedEvent> = flow {
+        var currentPosition = fromPosition
+        eventStream.stream(fromPosition, batchSize).collect { event ->
+            emit(StreamedEvent(event, StreamOffset(currentPosition)))
+            currentPosition++
+        }
+    }
 }
+
+/**
+ * Default EventProducer implementation.
+ * Streams events from the EventStream and wraps each with its StreamOffset.
+ */
+class DefaultEventProducer : EventProducer

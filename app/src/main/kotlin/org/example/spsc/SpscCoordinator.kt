@@ -1,9 +1,9 @@
 package org.example.spsc
 
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
-import org.example.events.Event
-import org.example.events.storage.Bookmark
 import org.example.events.storage.EventStream
+import org.example.events.storage.StreamedEvent
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,7 +23,7 @@ class SpscCoordinator(
     private val config: SpscConfig,
 ) {
     private val isRunning = AtomicBoolean(false)
-    private val queue = SpscQueue<Event<Any>>(config.maxQueueDepth)
+    private val queue = SpscQueue<StreamedEvent>(config.maxQueueDepth)
     private val executor = Executors.newFixedThreadPool(2)
     private var producerFuture: java.util.concurrent.Future<*>? = null
     private var consumerFuture: java.util.concurrent.Future<*>? = null
@@ -86,15 +86,14 @@ class SpscCoordinator(
             // Produce events continuously
             runBlocking {
                 producer.produce(eventStream, currentPosition, config.producerBatchSize)
-                    .collect { event ->
+                    .collect { streamedEvent ->
                         // Check if we should stop
                         if (!isRunning.get()) {
                             return@collect
                         }
 
-                        // Put event in queue, blocking if full
-                        queue.put(event)
-                        currentPosition++
+                        // Put streamed event in queue, blocking if full
+                        queue.put(streamedEvent)
                     }
             }
         } catch (e: Exception) {
@@ -107,14 +106,14 @@ class SpscCoordinator(
     private fun runConsumer() {
         try {
             while (isRunning.get()) {
-                // Poll events from queue in batches
-                val batch = mutableListOf<Event<Any>>()
+                // Poll streamed events from queue in batches
+                val batch = mutableListOf<StreamedEvent>()
 
                 // Try to collect a batch
                 for (i in 0 until config.consumerBatchSize) {
-                    val event = queue.poll(timeoutMs = 100)
-                    if (event != null) {
-                        batch.add(event)
+                    val streamedEvent = queue.poll(timeoutMs = 100)
+                    if (streamedEvent != null) {
+                        batch.add(streamedEvent)
                     } else if (batch.isNotEmpty()) {
                         break // Got some events, process them
                     } else if (!isRunning.get()) {
@@ -125,19 +124,13 @@ class SpscCoordinator(
 
                 if (batch.isNotEmpty()) {
                     try {
-                        // Get current bookmark
-                        val currentBookmark = runBlocking {
-                            eventStream.getBookmark(config.bookmarkName)
-                                ?: Bookmark(config.bookmarkName, 0L)
-                        }
-
-                        // Consume the batch
+                        // Consume the batch of streamed events
                         runBlocking {
-                            consumer.consume(batch, currentBookmark)
+                            consumer.consume(batch)
                         }
 
                         // On success, advance bookmark to position after last event
-                        val lastEventPosition = currentBookmark.position + batch.size.toLong()
+                        val lastEventPosition = batch.maxOf { it.offset.position } + 1L
                         runBlocking {
                             eventStream.saveBookmark(config.bookmarkName, lastEventPosition)
                         }
