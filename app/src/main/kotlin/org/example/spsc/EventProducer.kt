@@ -10,20 +10,8 @@ import org.example.events.storage.EventStream
  */
 interface EventProducer {
     suspend fun produce(
-        eventStore: EventStream,
+        eventStream: EventStream,
         fromPosition: Long,
         batchSize: Int,
-    ): Flow<Event<Any>>
-}
-
-/**
- * Default implementation of EventProducer.
- * Streams events from a starting position in batches.
- */
-class DefaultEventProducer : EventProducer {
-    override suspend fun produce(
-        eventStore: EventStream,
-        fromPosition: Long,
-        batchSize: Int,
-    ): Flow<Event<Any>> = eventStore.stream(fromPosition)
+    ): Flow<Event<Any>> = eventStream.stream(fromPosition, batchSize)
 }

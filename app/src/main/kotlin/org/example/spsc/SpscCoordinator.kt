@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SpscCoordinator(
     private val producer: EventProducer,
     private val consumer: EventConsumer,
-    private val eventStore: EventStream,
+    private val eventStream: EventStream,
     private val config: SpscConfig,
 ) {
     private val isRunning = AtomicBoolean(false)
@@ -79,13 +79,13 @@ class SpscCoordinator(
         try {
             // Get starting position from bookmark
             var currentPosition = runBlocking {
-                val bookmark = eventStore.getBookmark(config.bookmarkName)
+                val bookmark = eventStream.getBookmark(config.bookmarkName)
                 bookmark?.position ?: 0L
             }
 
             // Produce events continuously
             runBlocking {
-                producer.produce(eventStore, currentPosition, config.producerBatchSize)
+                producer.produce(eventStream, currentPosition, config.producerBatchSize)
                     .collect { event ->
                         // Check if we should stop
                         if (!isRunning.get()) {
@@ -127,7 +127,7 @@ class SpscCoordinator(
                     try {
                         // Get current bookmark
                         val currentBookmark = runBlocking {
-                            eventStore.getBookmark(config.bookmarkName)
+                            eventStream.getBookmark(config.bookmarkName)
                                 ?: Bookmark(config.bookmarkName, 0L)
                         }
 
@@ -139,7 +139,7 @@ class SpscCoordinator(
                         // On success, advance bookmark to position after last event
                         val lastEventPosition = currentBookmark.position + batch.size.toLong()
                         runBlocking {
-                            eventStore.saveBookmark(config.bookmarkName, lastEventPosition)
+                            eventStream.saveBookmark(config.bookmarkName, lastEventPosition)
                         }
                     } catch (e: Exception) {
                         // On failure, bookmark is NOT advanced
