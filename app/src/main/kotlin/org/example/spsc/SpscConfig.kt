@@ -1,6 +1,10 @@
 package org.example.spsc
 
-/** Configuration for SPSC (Single Producer, Single Consumer) component */
+/**
+ * Configuration for SPSC (Single Producer, Single Consumer) component.
+ *
+ * Controls producer/consumer behavior and batch sizing.
+ */
 data class SpscConfig(
     /** Number of events fetched per producer iteration */
     val producerBatchSize: Int = 10,
@@ -13,4 +17,12 @@ data class SpscConfig(
 
     /** Consumer identifier for bookmark tracking */
     val bookmarkName: String,
+
+    /**
+     * Number of consecutive empty batches before producer exits.
+     * Set to 0 to disable exit behavior (producer runs indefinitely).
+     * Set to > 0 to exit after N consecutive empty batches (useful for testing finite streams).
+     * Default: 0 (production mode - runs indefinitely)
+     */
+    val producerEmptyBatchThreshold: Int = 0,
 )

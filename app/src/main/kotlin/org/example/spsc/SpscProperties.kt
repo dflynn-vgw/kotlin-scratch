@@ -12,6 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * - APP_SPSC_PRODUCER_BATCH_SIZE
  * - APP_SPSC_CONSUMER_BATCH_SIZE
  * - APP_SPSC_MAX_QUEUE_DEPTH
+ * - APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD
  * - APP_SPSC_ENABLED
  */
 @ConfigurationProperties(prefix = "app.spsc")
@@ -30,6 +31,9 @@ data class SpscProperties(
 
     /** Maximum queue depth between producer and consumer */
     var maxQueueDepth: Int = 5,
+
+    /** Number of consecutive empty batches before producer exits (0 = indefinite) */
+    var producerEmptyBatchThreshold: Int = 0,
 
     /** Whether to enable SPSC processing on startup */
     var enabled: Boolean = true,

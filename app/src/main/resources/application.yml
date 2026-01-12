@@ -32,6 +32,8 @@ app:
     consumer-batch-size: ${APP_SPSC_CONSUMER_BATCH_SIZE:2}
     # Maximum queue depth between producer and consumer
     max-queue-depth: ${APP_SPSC_MAX_QUEUE_DEPTH:5}
+    # Number of consecutive empty batches before producer exits (0 = run indefinitely)
+    producer-empty-batch-threshold: ${APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD:0}
     # Whether to enable SPSC processing on startup
     enabled: ${APP_SPSC_ENABLED:true}
 

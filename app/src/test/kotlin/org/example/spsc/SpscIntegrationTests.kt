@@ -41,6 +41,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 2,
             maxQueueDepth = 5,
             bookmarkName = "test-consumer",
+            producerEmptyBatchThreshold = 3,
         )
 
         val consumedEvents = mutableListOf<StreamedEvent>()
@@ -93,6 +94,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 1,
             maxQueueDepth = 5,
             bookmarkName = "resumable-consumer",
+            producerEmptyBatchThreshold = 3,
         )
 
         // FIRST RUN: Process only first batch
@@ -175,6 +177,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 2,
             maxQueueDepth = 5,
             bookmarkName = "failing-consumer",
+            producerEmptyBatchThreshold = 3,
         )
 
         val consumer = EventConsumer { _ ->
@@ -208,6 +211,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 2, // Request 2 at a time
             maxQueueDepth = 5,
             bookmarkName = "batch-consumer",
+            producerEmptyBatchThreshold = 3,
         )
 
         val batchSizes = mutableListOf<Int>()
@@ -245,6 +249,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 1, // Small batch to test multiple calls
             maxQueueDepth = 5,
             bookmarkName = "position-tracker",
+            producerEmptyBatchThreshold = 3,
         )
 
         val allStreamedEvents = mutableListOf<StreamedEvent>()
@@ -295,6 +300,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 2,
             maxQueueDepth = 5,
             bookmarkName = "consumer-1",
+            producerEmptyBatchThreshold = 3,
         )
 
         val config2 = SpscConfig(
@@ -302,6 +308,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 2,
             maxQueueDepth = 5,
             bookmarkName = "consumer-2",
+            producerEmptyBatchThreshold = 3,
         )
 
         val consumer1Events = mutableListOf<StreamedEvent>()
@@ -378,6 +385,7 @@ class SpscIntegrationTests {
             consumerBatchSize = 5, // Still split into batches
             maxQueueDepth = 10,
             bookmarkName = "large-batch-consumer",
+            producerEmptyBatchThreshold = 3,
         )
 
         val allEvents = mutableListOf<StreamedEvent>()

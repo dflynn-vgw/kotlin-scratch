@@ -118,9 +118,9 @@ class SpscCoordinator(
                     consecutiveEmptyBatches++
                     logger.debug("Producer: empty batch #{}, position: {}", consecutiveEmptyBatches, producerPosition)
 
-                    // For testing: exit after a few empty batches (no more events in stream)
-                    // For production: could sleep and retry or wait for new events
-                    if (consecutiveEmptyBatches >= 3) {
+                    // Check if we should exit based on threshold
+                    // threshold=0 means run indefinitely; threshold>0 means exit after N empty batches
+                    if (config.producerEmptyBatchThreshold > 0 && consecutiveEmptyBatches >= config.producerEmptyBatchThreshold) {
                         logger.info("Producer: no events available, exiting after {} empty batches. Total produced: {}", consecutiveEmptyBatches, totalEventCount)
                         break
                     }
