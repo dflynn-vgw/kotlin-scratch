@@ -1,17 +1,12 @@
 package org.example.spsc
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.example.events.Event
 import org.example.events.storage.Bookmark
-import org.example.events.storage.StreamingEventStore
+import org.example.events.storage.EventStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.min
 
 /**
  * SPSC (Single Producer, Single Consumer) Coordinator.
@@ -24,7 +19,7 @@ import kotlin.math.min
 class SpscCoordinator(
     private val producer: EventProducer,
     private val consumer: EventConsumer,
-    private val eventStore: StreamingEventStore,
+    private val eventStore: EventStream,
     private val config: SpscConfig,
 ) {
     private val isRunning = AtomicBoolean(false)

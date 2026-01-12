@@ -2,7 +2,7 @@ package org.example.spsc
 
 import kotlinx.coroutines.flow.Flow
 import org.example.events.Event
-import org.example.events.storage.StreamingEventStore
+import org.example.events.storage.EventStream
 
 /**
  * Produces events from a StreamingEventStore.
@@ -10,7 +10,7 @@ import org.example.events.storage.StreamingEventStore
  */
 interface EventProducer {
     suspend fun produce(
-        eventStore: StreamingEventStore,
+        eventStore: EventStream,
         fromPosition: Long,
         batchSize: Int,
     ): Flow<Event<Any>>
@@ -22,7 +22,7 @@ interface EventProducer {
  */
 class DefaultEventProducer : EventProducer {
     override suspend fun produce(
-        eventStore: StreamingEventStore,
+        eventStore: EventStream,
         fromPosition: Long,
         batchSize: Int,
     ): Flow<Event<Any>> = eventStore.stream(fromPosition)
