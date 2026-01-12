@@ -1,8 +1,8 @@
-# SPSC (Single Producer, Single Consumer) Event Streaming Architecture
+# Event Streaming Architecture
 
 ## Overview
 
-This document describes the event streaming and SPSC pattern implementation that provides continuous event consumption with position tracking, fault-tolerant processing, and multiple EventStream implementations for different use cases.
+This document describes a comprehensive event streaming platform that provides continuous event consumption with position tracking, fault-tolerant processing, and multiple EventStream implementations for different use cases. The implementation uses the Single Producer, Single Consumer (SPSC) pattern as its internal orchestration mechanism.
 
 ## Problem Statement
 
