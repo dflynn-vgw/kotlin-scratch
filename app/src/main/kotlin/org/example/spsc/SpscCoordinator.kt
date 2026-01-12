@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.example.events.storage.EventStream
 import org.example.events.storage.StreamedEvent
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -22,6 +23,7 @@ class SpscCoordinator(
     private val eventStream: EventStream,
     private val config: SpscConfig,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
     private val isRunning = AtomicBoolean(false)
     private val queue = SpscQueue<StreamedEvent>(config.maxQueueDepth)
     private val executor = Executors.newFixedThreadPool(2)
@@ -82,21 +84,29 @@ class SpscCoordinator(
                 val bookmark = eventStream.getBookmark(config.bookmarkName)
                 bookmark?.position ?: 0L
             }
+            logger.debug("Producer starting from position: {}", currentPosition)
 
             // Produce events continuously
+            var eventCount = 0
             runBlocking {
                 producer.produce(eventStream, currentPosition, config.producerBatchSize)
                     .collect { streamedEvent ->
+                        logger.debug("Producer emitted event at position {}", streamedEvent.offset.position)
+                        eventCount++
                         // Check if we should stop
                         if (!isRunning.get()) {
+                            logger.debug("Producer stopping")
                             return@collect
                         }
 
                         // Put streamed event in queue, blocking if full
                         queue.put(streamedEvent)
+                        logger.debug("Producer queued event {}", eventCount)
                     }
             }
+            logger.info("Producer finished - emitted {} events", eventCount)
         } catch (e: Exception) {
+            logger.error("Producer error", e)
             if (isRunning.get()) {
                 e.printStackTrace() // Log error - replace with proper logging
             }
@@ -113,29 +123,35 @@ class SpscCoordinator(
                 for (i in 0 until config.consumerBatchSize) {
                     val streamedEvent = queue.poll(timeoutMs = 100)
                     if (streamedEvent != null) {
+                        logger.debug("Consumer polled event at position {}", streamedEvent.offset.position)
                         batch.add(streamedEvent)
                     } else if (batch.isNotEmpty()) {
                         break // Got some events, process them
                     } else if (!isRunning.get()) {
+                        logger.debug("Consumer stopping")
                         return // Coordinator stopping
                     }
                     // If queue empty and we haven't collected any events yet, loop again
                 }
 
                 if (batch.isNotEmpty()) {
+                    logger.debug("Consumer processing batch of {} events", batch.size)
                     try {
                         // Consume the batch of streamed events
                         runBlocking {
                             consumer.consume(batch)
                         }
+                        logger.debug("Consumer batch processed successfully")
 
                         // On success, advance bookmark to position after last event
                         val lastEventPosition = batch.maxOf { it.offset.position } + 1L
                         runBlocking {
                             eventStream.saveBookmark(config.bookmarkName, lastEventPosition)
                         }
+                        logger.debug("Bookmark advanced to {}", lastEventPosition)
                     } catch (e: Exception) {
                         // On failure, bookmark is NOT advanced
+                        logger.error("Consumer batch failed", e)
                         if (isRunning.get()) {
                             e.printStackTrace() // Log error - replace with proper logging
                         }
@@ -144,6 +160,7 @@ class SpscCoordinator(
                 }
             }
         } catch (e: Exception) {
+            logger.error("Consumer error", e)
             if (isRunning.get()) {
                 e.printStackTrace() // Log error - replace with proper logging
             }

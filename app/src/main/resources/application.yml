@@ -13,6 +13,28 @@ spring:
   profiles:
     default: worker
 
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    org.example: DEBUG
+
+# SPSC (Single Producer, Single Consumer) Configuration
+app:
+  spsc:
+    # Path to the CSV file containing events
+    csv-path: ${APP_SPSC_CSV_PATH:./events.csv}
+    # Name for the bookmark (consumer progress checkpoint)
+    bookmark-name: ${APP_SPSC_BOOKMARK_NAME:default-consumer}
+    # Batch size for event production
+    producer-batch-size: ${APP_SPSC_PRODUCER_BATCH_SIZE:2}
+    # Batch size for event consumption
+    consumer-batch-size: ${APP_SPSC_CONSUMER_BATCH_SIZE:2}
+    # Maximum queue depth between producer and consumer
+    max-queue-depth: ${APP_SPSC_MAX_QUEUE_DEPTH:5}
+    # Whether to enable SPSC processing on startup
+    enabled: ${APP_SPSC_ENABLED:true}
+
 # Server config only needed for API profile
 # server:
 #   port: ${SERVER_PORT:8080}
