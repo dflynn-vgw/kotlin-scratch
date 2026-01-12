@@ -79,36 +79,64 @@ class SpscCoordinator(
 
     private fun runProducer() {
         try {
-            // Get starting position from bookmark
-            var currentPosition = runBlocking {
+            // Get initial position from bookmark
+            var producerPosition = runBlocking {
                 val bookmark = eventStream.getBookmark(config.bookmarkName)
                 bookmark?.position ?: 0L
             }
-            logger.debug("Producer starting from position: {}", currentPosition)
+            logger.debug("Producer starting from position: {}", producerPosition)
+            var totalEventCount = 0
+            var consecutiveEmptyBatches = 0
 
-            // Produce events continuously
-            var eventCount = 0
-            runBlocking {
-                producer.produce(eventStream, currentPosition, config.producerBatchSize)
-                    .collect { streamedEvent ->
-                        logger.debug("Producer emitted event at position {}", streamedEvent.offset.position)
-                        eventCount++
-                        // Check if we should stop
-                        if (!isRunning.get()) {
-                            logger.debug("Producer stopping")
-                            return@collect
+            while (isRunning.get()) {
+                // Produce a batch of events starting from current position
+                var batchEventCount = 0
+
+                runBlocking {
+                    producer.produce(eventStream, producerPosition, config.producerBatchSize)
+                        .collect { streamedEvent ->
+                            logger.debug("Producer emitted event at position {}", streamedEvent.offset.position)
+                            batchEventCount++
+
+                            // Check if we should stop
+                            if (!isRunning.get()) {
+                                logger.debug("Producer stopping")
+                                return@collect
+                            }
+
+                            // Put streamed event in queue, blocking if full
+                            // queue.put() blocks until there's space
+                            queue.put(streamedEvent)
+                            logger.debug("Producer queued event at position {}", streamedEvent.offset.position)
+                            totalEventCount++
+                            producerPosition = streamedEvent.offset.position + 1
                         }
+                }
 
-                        // Put streamed event in queue, blocking if full
-                        queue.put(streamedEvent)
-                        logger.debug("Producer queued event {}", eventCount)
+                // If no events were produced in this batch
+                if (batchEventCount == 0) {
+                    consecutiveEmptyBatches++
+                    logger.debug("Producer: empty batch #{}, position: {}", consecutiveEmptyBatches, producerPosition)
+
+                    // For testing: exit after a few empty batches (no more events in stream)
+                    // For production: could sleep and retry or wait for new events
+                    if (consecutiveEmptyBatches >= 3) {
+                        logger.info("Producer: no events available, exiting after {} empty batches. Total produced: {}", consecutiveEmptyBatches, totalEventCount)
+                        break
                     }
+
+                    // Sleep briefly before retrying
+                    Thread.sleep(100)
+                } else {
+                    // Reset empty batch counter when we produce events
+                    consecutiveEmptyBatches = 0
+                }
             }
-            logger.info("Producer finished - emitted {} events", eventCount)
+            logger.info("Producer finished - total events produced: {}", totalEventCount)
         } catch (e: Exception) {
             logger.error("Producer error", e)
             if (isRunning.get()) {
-                e.printStackTrace() // Log error - replace with proper logging
+                e.printStackTrace()
             }
         }
     }
