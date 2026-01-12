@@ -17,12 +17,20 @@ import org.example.events.storage.StreamedEvent
  * Each emitted StreamedEvent includes the event and its StreamOffset, enabling consumers
  * to be position-aware and implement exactly-once semantics.
  */
-interface EventProducer {
+fun interface EventProducer {
     suspend fun produce(
         eventStream: EventStream,
         fromPosition: Long,
         batchSize: Int,
-    ): Flow<StreamedEvent> = flow {
+    ): Flow<StreamedEvent>
+}
+
+/**
+ * Default EventProducer implementation.
+ * Streams events from the EventStream and wraps each with its StreamOffset.
+ */
+val DefaultEventProducer: EventProducer = EventProducer { eventStream, fromPosition, batchSize ->
+    flow {
         var currentPosition = fromPosition
         eventStream.stream(fromPosition, batchSize).collect { event ->
             emit(StreamedEvent(event, StreamOffset(currentPosition)))
@@ -30,9 +38,3 @@ interface EventProducer {
         }
     }
 }
-
-/**
- * Default EventProducer implementation.
- * Streams events from the EventStream and wraps each with its StreamOffset.
- */
-class DefaultEventProducer : EventProducer

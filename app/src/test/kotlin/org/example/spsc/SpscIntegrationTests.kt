@@ -51,7 +51,7 @@ class SpscIntegrationTests {
         }
 
         val coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer,
             csvStream,
             config,
@@ -108,7 +108,7 @@ class SpscIntegrationTests {
         }
 
         var coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer1,
             csvStream,
             config,
@@ -137,7 +137,7 @@ class SpscIntegrationTests {
         }
 
         coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer2,
             csvStream,
             config,
@@ -182,7 +182,7 @@ class SpscIntegrationTests {
         }
 
         val coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer,
             csvStream,
             config,
@@ -216,7 +216,7 @@ class SpscIntegrationTests {
         }
 
         val coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer,
             csvStream,
             config,
@@ -253,7 +253,7 @@ class SpscIntegrationTests {
         }
 
         val coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer,
             csvStream,
             config,
@@ -316,7 +316,7 @@ class SpscIntegrationTests {
 
         // Run first coordinator
         val coordinator1 = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer1,
             csvStream,
             config1,
@@ -335,7 +335,7 @@ class SpscIntegrationTests {
 
         // Run second coordinator with same event source
         val coordinator2 = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer2,
             csvStream,
             config2,
@@ -386,7 +386,7 @@ class SpscIntegrationTests {
         }
 
         val coordinator = SpscCoordinator(
-            DefaultEventProducer(),
+            DefaultEventProducer,
             consumer,
             csvStream,
             config,
