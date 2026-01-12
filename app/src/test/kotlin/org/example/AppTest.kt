@@ -1,5 +1,6 @@
 package org.example
 
+import org.example.spsc.SpscWorkerService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -14,21 +15,21 @@ import kotlin.test.assertTrue
 class AppTest {
 
     @Autowired
-    lateinit var workerService: WorkerService
+    lateinit var spscWorkerService: SpscWorkerService
 
     @Test
-    fun `worker service bean is created and runs successfully`(output: CapturedOutput) {
+    fun `Spsc worker service bean is created and runs successfully`(output: CapturedOutput) {
         // Verify WorkerService bean is created
-        assertNotNull(workerService, "WorkerService should be autowired")
+        assertNotNull(spscWorkerService, "SpscWorkerService should be autowired")
 
         // Verify expected log messages were written during application startup
         val logOutput = output.toString()
         assertTrue(
-            logOutput.contains("Worker service started"),
+            logOutput.contains("Starting SPSC event processing..."),
             "Should log 'Worker service started'",
         )
         assertTrue(
-            logOutput.contains("Worker service initialization complete"),
+            logOutput.contains("SPSC coordinator started successfully"),
             "Should log 'Worker service initialization complete'",
         )
     }
