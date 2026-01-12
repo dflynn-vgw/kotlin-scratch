@@ -39,6 +39,23 @@ class SpscWorkerService(
                 }
             },
         )
+
+        // Wait for the coordinator to finish if in test mode
+        // If producerEmptyBatchThreshold > 0, coordinator will finish when all events are processed
+        // If producerEmptyBatchThreshold == 0, coordinator runs indefinitely
+        if (properties.producerEmptyBatchThreshold > 0) {
+            logger.info("SPSC coordinator will stop after processing all events")
+            val finished = coordinator.await()
+            if (finished) {
+                logger.info("SPSC coordinator finished, exiting application")
+                System.exit(0)
+            } else {
+                logger.warn("SPSC coordinator await timed out")
+                System.exit(1)
+            }
+        }
+        // In production mode (threshold == 0), coordinator runs indefinitely
+        // Spring Boot keeps the app alive on its own
     }
 
     /**
