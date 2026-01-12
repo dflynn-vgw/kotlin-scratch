@@ -2,34 +2,56 @@
 
 ## Overview
 
-This document describes the event streaming and SPSC pattern implementation that extends the EventStore with continuous event consumption capabilities, position tracking, and fault-tolerant processing.
+This document describes the event streaming and SPSC pattern implementation that provides continuous event consumption with position tracking, fault-tolerant processing, and multiple EventStream implementations for different use cases.
 
 ## Problem Statement
 
 The original EventStore provided point-in-time read/save operations suitable for aggregate hydration. To support continuous event processing with position tracking and fault tolerance, we needed:
 
-1. Streaming capability to read events from a position
+1. Streaming capability to read events from a position with batch size control
 2. Checkpoint management (bookmarks) for consumer progress
-3. An event processing pipeline using the SPSC pattern
-4. Backpressure handling and fault tolerance
+3. Position-aware events for exactly-once semantics
+4. An event processing pipeline using the SPSC pattern
+5. Backpressure handling and fault tolerance
 
 ## Architecture
 
-### 1. StreamingEventStore Interface
+### Core Components
 
-Extends `EventStore` with streaming and bookmark capabilities:
+#### EventStream Interface
+
+Core abstraction for streaming events with position tracking:
 
 ```kotlin
-interface StreamingEventStore : EventStore {
-    fun stream(fromPosition: Long = 0): Flow<Event<Any>>
+interface EventStream {
+    fun stream(fromPosition: Long = 0, batchSize: Int = 1): Flow<Event<Any>>
     suspend fun saveBookmark(name: String, position: Long)
     suspend fun getBookmark(name: String): Bookmark?
 }
 ```
 
-**Rationale**: Separates streaming concerns from point-in-time queries, enabling both CQRS/ES patterns (aggregate hydration) and event processor patterns (continuous consumption).
+Supports multiple implementations for different use cases (in-memory, CSV files, databases).
 
-### 2. Bookmark Entity
+#### StreamOffset & StreamedEvent
+
+Position-aware event wrapper enabling exactly-once processing:
+
+```kotlin
+data class StreamOffset(val position: Long)
+
+data class StreamedEvent(
+    val event: Event<Any>,
+    val offset: StreamOffset,
+)
+```
+
+**Benefits**:
+- Makes position semantics explicit and type-safe
+- Consumer receives position information directly
+- Enables idempotent processing using position as correlation ID
+- Simplifies bookmark calculation: `batch.maxOf { it.offset.position } + 1L`
+
+#### Bookmark Entity
 
 ```kotlin
 data class Bookmark(
@@ -39,26 +61,159 @@ data class Bookmark(
 )
 ```
 
-- Consumer identifier (`name`)
-- Last processed position (`position`)
-- Timestamp for audit/debugging
+Represents consumer progress checkpoint:
+- `name`: Unique consumer identifier
+- `position`: Last successfully processed event position
+- `updatedAt`: Timestamp for audit/debugging
 
-Enables resumable consumption: failure means no bookmark advance → automatic replay on retry.
+**Failure Semantics**: Bookmark only advances on successful consumption. Consumer exceptions prevent bookmark advancement, enabling automatic replay on retry.
 
-### 3. InMemoryStreamingEventStore Implementation
+### EventStream Implementations
 
-Full in-memory implementation extending `InMemoryEventStore`:
+#### InMemoryEventStream
 
-- Thread-safe event logging with `ConcurrentHashMap` for bookmarks
-- Global event position tracking
-- `stream(fromPosition)` returns Flow<Event<Any>>
-- Bookmark persistence in same storage as events
+In-memory implementation with thread-safe event caching:
 
-**Thread Safety**: Uses synchronized blocks to maintain consistency between event log and streaming position.
+```kotlin
+class InMemoryEventStream(
+    seedEvents: List<Event<Any>> = emptyList(),
+    private val fixedTime: Long? = null,
+) : EventStream
+```
 
-### 4. SPSC Component Structure
+Features:
+- Thread-safe with `Collections.synchronizedList()` for event log
+- Lazy-loaded event caching
+- In-memory bookmark persistence
+- Deterministic testing with optional fixed timestamps
 
-#### Configuration
+**Use Case**: Unit tests, lightweight in-process streaming, development.
+
+#### CSVEventStream
+
+File-based implementation for external data sources and integration testing:
+
+```kotlin
+class CSVEventStream(
+    private val eventsCsvPath: String,
+    private val bookmarksDir: String = ".",
+) : EventStream
+```
+
+Features:
+- Reads events from CSV: `ORDER_ID,CUSTOMER_ID,EVENT_TYPE,TIMESTAMP`
+- Persists bookmarks to `{BookmarkName}.csv`: `POSITION,TIMESTAMP`
+- Lazy-loads and caches events in memory
+- Thread-safe with `ReentrantReadWriteLock`
+- Graceful handling of malformed CSV lines
+- Event payload generation using OrderEventBuilder
+
+**Use Case**: Integration testing, simulating external event sources, development data.
+
+### EventProducer
+
+```kotlin
+interface EventProducer {
+    suspend fun produce(
+        eventStream: EventStream,
+        fromPosition: Long,
+        batchSize: Int,
+    ): Flow<StreamedEvent>
+}
+
+class DefaultEventProducer : EventProducer {
+    override suspend fun produce(
+        eventStream: EventStream,
+        fromPosition: Long,
+        batchSize: Int,
+    ): Flow<StreamedEvent> = flow {
+        var currentPosition = fromPosition
+        eventStream.stream(fromPosition, batchSize).collect { event ->
+            emit(StreamedEvent(event, StreamOffset(currentPosition)))
+            currentPosition++
+        }
+    }
+}
+```
+
+**Responsibilities**:
+- Stream events from EventStream starting at given position
+- Wrap each event with its StreamOffset
+- Emit StreamedEvent items containing position information
+- Support custom implementations for filtering/transformation
+
+### EventConsumer
+
+```kotlin
+fun interface EventConsumer {
+    suspend fun consume(streamedEvents: List<StreamedEvent>)
+}
+```
+
+**Contract**:
+- Receives batch of position-aware events
+- Can calculate next bookmark: `batch.maxOf { it.offset.position } + 1L`
+- Exception prevents bookmark advancement (enables replay)
+- Ideal for implementing idempotent side effects
+
+### SPSC Queue
+
+```kotlin
+class SpscQueue<T>(private val maxCapacity: Int = 100) {
+    fun put(item: T): Boolean
+    fun poll(timeoutMs: Long = 1000): T?
+}
+```
+
+Thread-safe bounded queue:
+- Uses `LinkedBlockingQueue<T>` internally
+- Blocking `put()` when full (producer backpressure)
+- Non-blocking `poll()` with timeout
+- Respects queue capacity constraints
+
+### SpscCoordinator
+
+```kotlin
+class SpscCoordinator(
+    private val producer: EventProducer,
+    private val consumer: EventConsumer,
+    private val eventStream: EventStream,
+    private val config: SpscConfig,
+) {
+    fun start()
+    fun stop()
+    fun await(timeoutMs: Long = 30000): Boolean
+}
+```
+
+Orchestrates the SPSC pipeline:
+
+1. **Startup** (`start()`)
+   - Spawns producer on thread pool
+   - Spawns consumer on separate thread
+   - Producer reads starting position from saved bookmark
+
+2. **Producer Thread**
+   - Gets starting position from `eventStream.getBookmark()`
+   - Calls `producer.produce(eventStream, fromPosition, batchSize)`
+   - Emits `StreamedEvent` items with positions
+   - Puts streamed events into bounded queue
+   - Stops when `isRunning` flag cleared
+
+3. **Consumer Thread**
+   - Polls `StreamedEvent` items from queue in batches
+   - Batches up to `consumerBatchSize` items
+   - Calls `consumer.consume(batch)` with positioned events
+   - On success: advances bookmark to `batch.maxOf { it.offset.position } + 1L`
+   - On exception: bookmark NOT advanced (triggers replay)
+   - Continues processing despite consumer exceptions
+
+4. **Lifecycle**
+   - `start()`: Begin processing
+   - `stop()`: Signal graceful shutdown
+   - `await(timeoutMs)`: Block until both threads complete
+
+### Configuration
 
 ```kotlin
 data class SpscConfig(
@@ -69,90 +224,13 @@ data class SpscConfig(
 )
 ```
 
-Configurable throughput tuning at startup.
+## Usage Examples
 
-#### Producer
-
-```kotlin
-interface EventProducer {
-    suspend fun produce(
-        eventStore: StreamingEventStore,
-        fromPosition: Long,
-        batchSize: Int,
-    ): Flow<Event<Any>>
-}
-```
-
-- Fetches events from StreamingEventStore starting at a position
-- Returns Flow for composable, cancellable streaming
-- Respects backpressure from bounded queue
-
-#### Consumer
-
-```kotlin
-fun interface EventConsumer {
-    suspend fun consume(events: List<Event<Any>>, bookmark: Bookmark)
-}
-```
-
-- Receives batch of events plus current bookmark
-- Bookmark passed for context/optional custom checkpoint logic
-- Returns successfully only if all events processed
-- Failure means bookmark NOT advanced (triggers replay)
-
-#### Internal Queue
-
-```kotlin
-class SpscQueue<T>(private val maxCapacity: Int = 100)
-```
-
-- Thread-safe bounded queue using `LinkedBlockingQueue<T>`
-- `put(item)` - blocking if queue full (producer backpressure)
-- `poll(timeoutMs)` - non-blocking with timeout (consumer polling)
-- Implements natural backpressure: producer pauses when queue full
-
-#### Coordinator
-
-```kotlin
-class SpscCoordinator(
-    private val producer: EventProducer,
-    private val consumer: EventConsumer,
-    private val eventStore: StreamingEventStore,
-    private val config: SpscConfig,
-)
-```
-
-Orchestrates the pipeline:
-
-1. **Startup** (`start()`)
-   - Spawns producer on thread pool
-   - Spawns consumer on separate thread
-   - Producer reads starting position from bookmark
-
-2. **Producer Thread**
-   - Gets starting position from stored bookmark
-   - Streams events from that position
-   - Puts events into bounded queue (blocks if full)
-   - Stops when told to via `isRunning` flag
-
-3. **Consumer Thread**
-   - Polls events from queue in configurable batches
-   - Calls consumer with batch + current bookmark
-   - On success: advances bookmark to position + batch size
-   - On failure: bookmark NOT advanced (no side effects)
-   - Retries or logs error without breaking pipeline
-
-4. **Lifecycle**
-   - `stop()` - gracefully signals shutdown
-   - `await(timeoutMs)` - blocks until both threads complete
-
-## Usage Pattern
-
-### Basic Event Processing
+### Basic Event Processing with CSVEventStream
 
 ```kotlin
 // Setup
-val eventStore = InMemoryStreamingEventStore()
+val eventStream = CSVEventStream("events.csv", ".")
 val config = SpscConfig(
     producerBatchSize = 10,
     consumerBatchSize = 5,
@@ -161,9 +239,9 @@ val config = SpscConfig(
 )
 
 // Define consumer logic
-val consumer = EventConsumer { events, bookmark ->
-    events.forEach { event ->
-        println("Processing ${event.type} from position ${bookmark.position}")
+val consumer = EventConsumer { streamedEvents ->
+    streamedEvents.forEach { streamedEvent ->
+        println("Processing ${streamedEvent.event.type} at position ${streamedEvent.offset.position}")
         // Your business logic here
     }
 }
@@ -172,7 +250,7 @@ val consumer = EventConsumer { events, bookmark ->
 val coordinator = SpscCoordinator(
     DefaultEventProducer(),
     consumer,
-    eventStore,
+    eventStream,
     config,
 )
 
@@ -195,20 +273,22 @@ coordinator.await()
 val coordinator2 = SpscCoordinator(
     DefaultEventProducer(),
     consumer,
-    eventStore,
+    eventStream,
     config, // same bookmarkName
 )
 
-coordinator2.start() // Resumes from where it left off
+coordinator2.start() // Resumes from last saved position
 ```
 
-### Fault Tolerance
+### Fault Tolerance with Retry
 
 ```kotlin
-val consumer = EventConsumer { events, _ ->
+val consumer = EventConsumer { streamedEvents ->
     try {
-        processEvents(events)
-        // Success: bookmark will advance
+        streamedEvents.forEach { streamedEvent ->
+            processEvent(streamedEvent.event)
+        }
+        // Success: bookmark advances
     } catch (e: Exception) {
         // Failure: bookmark NOT advanced
         // On next coordinator run, events replayed from same position
@@ -217,66 +297,96 @@ val consumer = EventConsumer { events, _ ->
 }
 ```
 
+### Position-Based Idempotence
+
+```kotlin
+val consumer = EventConsumer { streamedEvents ->
+    streamedEvents.forEach { streamedEvent ->
+        val position = streamedEvent.offset.position
+        val eventId = "${bookmarkName}-$position"
+        
+        // Use position as correlation/idempotency key
+        if (!isProcessed(eventId)) {
+            processEvent(streamedEvent.event)
+            markProcessed(eventId)
+        }
+    }
+}
+```
+
 ## Design Rationale
 
-### Separation of Concerns
+### Position-Aware Events (StreamedEvent)
 
-- **EventStore**: Point-in-time queries for aggregate hydration (CQRS/ES)
-- **StreamingEventStore**: Continuous event flow for processors
-- Allows different implementations/storage backends for each pattern
+- **Explicit Intent**: Consumer always knows event position
+- **Type Safety**: Prevents position from being confused with other Longs
+- **Simplicity**: Consumer calculates next bookmark, not coordinator
+- **Extensibility**: StreamOffset can be extended (timestamp, stream ID, checksum)
 
-### Backpressure
+### Multiple EventStream Implementations
 
-- Bounded queue naturally throttles producer if consumer lags
-- No memory explosion with slow consumer
-- No artificial delays or complex flow control needed
+- **Flexibility**: Different backends for different needs
+- **Testing**: CSV allows deterministic, portable test data
+- **Realism**: External file source simulates real streaming scenarios
+- **Separation**: EventStore (point-in-time) vs EventStream (continuous)
 
-### Fault Tolerance
+### Bounded Queue with Backpressure
 
-- Bookmark only advances on successful consumption
-- Failure → automatic replay on retry
-- No lost events, no duplicates (exactly-once semantics with side effects)
+- **Memory Safe**: Prevents unbounded queue growth
+- **Producer Throttling**: Producer waits if queue full
+- **Natural Flow Control**: No artificial delays needed
+- **Configurability**: Queue depth tunes memory vs responsiveness
 
-### Thread-Based Parallelism
+### Failure Isolation
 
-- Producer and consumer run on separate threads
-- True parallelism without coroutine overhead
-- Natural for CPU-bound or blocking operations in consumer
-
-### Configurability
-
-- Batch sizes tune throughput vs. latency
-- Queue depth balances memory vs. responsiveness
-- One config object for entire pipeline
+- **No Bookmark Advance**: Consumer exception leaves checkpoint unchanged
+- **Automatic Replay**: Next run resumes from same position
+- **Side Effect Safety**: Enables idempotent processing
+- **No Data Loss**: Failed events never dropped
 
 ## Implementation Files
 
-| File | Purpose |
-|------|---------|
-| `StreamingEventStore.kt` | Interface + Bookmark entity |
-| `InMemoryStreamingEventStore.kt` | In-memory implementation with threading |
-| `SpscConfig.kt` | Configuration data class |
-| `SpscQueue.kt` | Internal bounded queue wrapper |
-| `EventProducer.kt` | Producer interface & default implementation |
-| `EventConsumer.kt` | Consumer functional interface |
-| `SpscCoordinator.kt` | Main orchestrator (145 lines) |
-| `SpscCoordinatorTests.kt` | Integration test suite |
-| `InMemoryStreamingEventStoreTests.kt` | Streaming functionality tests |
+Core abstractions:
+- `EventStream.kt` - Interface definition
+- `StreamOffset.kt` - Position value type
+- `StreamedEvent.kt` - Event + offset wrapper
+- `Bookmark.kt` - Checkpoint entity
 
-## Testing
+Implementations:
+- `InMemoryEventStream.kt` - In-memory implementation
+- `CSVEventStream.kt` - CSV file-based implementation
+- `EventProducer.kt` - Producer interface & default implementation
+- `EventConsumer.kt` - Consumer functional interface
+- `SpscConfig.kt` - Configuration
+- `SpscQueue.kt` - Internal bounded queue
+- `SpscCoordinator.kt` - Main orchestrator (160 lines)
 
-Integration tests cover:
+Tests:
+- `InMemoryEventStreamTests.kt` - Stream functionality tests
+- `CSVEventStreamTests.kt` - CSV implementation tests (12 scenarios)
+- `SpscIntegrationTests.kt` - Full pipeline integration tests (7 scenarios)
 
+## Test Coverage
+
+### EventStream Tests
+- Streaming from various positions
+- Batch size limiting
+- Bookmark persistence and retrieval
+- Multiple independent bookmarks
+- Malformed data handling
+
+### SPSC Integration Tests
 - Full pipeline: produce → queue → consume → bookmark
-- Resume from bookmark on restart
-- Consumer failure does not advance bookmark
-- Queue respects depth and provides backpressure
-- Batch sizing and processing
+- Bookmark resume on coordinator restart
+- Consumer failure doesn't advance bookmark
+- Batch size limiting and aggregation
+- Position tracking across multiple calls
+- Multiple consumers with independent bookmarks
+- Large batch processing
 
 Run with:
 ```bash
-./gradlew test --tests="SpscCoordinatorTests"
-./gradlew test --tests="InMemoryStreamingEventStoreTests"
+./gradlew test
 ```
 
 ## Integration with CQRS/ES
@@ -284,57 +394,87 @@ Run with:
 ### Event Sourcing (Aggregate Hydration)
 
 ```kotlin
+// Point-in-time query for aggregate rebuilding
 val events = eventStore.read("order-123")
 val aggregate = OrderAggregate()
 events.forEach { aggregate.apply(it) }
-// aggregate is now hydrated from its event history
 ```
 
-### Event Processing (SPSC)
+### Event Processing (SPSC Streaming)
 
 ```kotlin
 val coordinator = SpscCoordinator(
     DefaultEventProducer(),
-    EventConsumer { events, _ ->
-        events.forEach { event ->
+    EventConsumer { streamedEvents ->
+        streamedEvents.forEach { streamedEvent ->
             // Update read models
+            updateProjection(streamedEvent.event)
             // Send notifications
+            notifyListeners(streamedEvent.event)
             // Trigger sagas
+            triggerSaga(streamedEvent.event)
         }
     },
-    eventStore,
+    eventStream,
     config,
 )
 
+// Run continuously
 coordinator.start()
-// Runs continuously, processing events as they arrive
 ```
 
-Both patterns coexist on the same EventStore, enabling full CQRS architecture.
+Both patterns coexist using the same event source, enabling full CQRS architecture.
+
+## Performance Tuning
+
+### Configuration Impact
+
+- **Producer Batch Size**: Larger = fewer I/O operations, more latency
+- **Consumer Batch Size**: Larger = fewer context switches, higher memory
+- **Queue Depth**: Larger = more buffering, higher memory; smaller = more backpressure
+- **Event Source**: In-memory fast, CSV slightly slower (cached after first read)
+
+### Horizontal Scaling
+
+Run multiple coordinators with different `bookmarkName` values:
+```kotlin
+// Consumer 1: processes orders
+val coordinator1 = SpscCoordinator(..., SpscConfig(..., bookmarkName = "order-processor"))
+
+// Consumer 2: processes payments  
+val coordinator2 = SpscCoordinator(..., SpscConfig(..., bookmarkName = "payment-processor"))
+
+// Both process same events independently with separate checkpoints
+```
 
 ## Future Enhancements
 
-1. **Persistent Storage**: Replace InMemoryStreamingEventStore with database backend (PostgreSQL, etc.)
-2. **Retry Policy**: Configurable exponential backoff on consumer failure
-3. **Metrics**: Track throughput, latency, error rates
-4. **Multi-Stream**: Support consuming from multiple streams or topics
-5. **Dead Letter Queue**: Route failed events to DLQ after N retries
-6. **Exactly-Once Guarantees**: Idempotent consumer operations or distributed transactions
-7. **Consumer Groups**: Multiple consumers on same stream with automatic load balancing
-
-## Performance Considerations
-
-- **Producer Batch Size**: Larger batches = fewer lock acquisitions, more latency
-- **Consumer Batch Size**: Larger batches = fewer context switches, more memory
-- **Queue Depth**: Larger queue = more buffering, higher memory; smaller = more backpressure
-- **Thread Count**: 2 threads (producer + consumer) typically sufficient; scale horizontally by running multiple coordinators
+1. **Database EventStream**: PostgreSQL, MySQL, etc. backend
+2. **Retry Policy**: Configurable exponential backoff
+3. **Metrics/Observability**: Throughput, latency, error tracking
+4. **Multi-Stream**: Consume from multiple streams simultaneously
+5. **Dead Letter Queue**: Failed events after N retries
+6. **Exactly-Once Guarantee**: Distributed transaction support
+7. **Consumer Groups**: Auto load-balancing across multiple consumers
 
 ## Troubleshooting
 
-**Slow Processing**: Increase consumer batch size or check consumer implementation for bottlenecks
+**Events not processing**:
+- Check if consumer exceptions are being thrown (silently caught)
+- Verify `eventStream.stream()` returns events
+- Confirm producer is emitting StreamedEvent items
 
-**High Memory**: Decrease queue depth or consumer batch size
+**High memory usage**:
+- Reduce `maxQueueDepth` in SpscConfig
+- Reduce `consumerBatchSize` to process more frequently
+- Check if events are very large
 
-**Bookmark Not Advancing**: Check consumer exceptions; they prevent bookmark update
+**Bookmark not advancing**:
+- Consumer exception prevents advancement (check logs)
+- Verify consumer completes successfully
+- Check `eventStream.getBookmark(name)` returns expected position
 
-**Missing Events**: Verify bookmark position reflects correct position in event stream; check streaming implementation for position off-by-one errors
+**Missing events**:
+- Verify bookmark position is correct with `getBookmark()`
+- Check EventStream implementation supports streaming from that position
+- Confirm batchSize doesn't truncate events
