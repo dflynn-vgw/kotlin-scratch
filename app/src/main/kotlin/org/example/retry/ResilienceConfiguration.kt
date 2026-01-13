@@ -7,16 +7,22 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class ResilienceConfiguration {
     @Bean
-    fun deadLetterQueueService(): DeadLetterQueueService = DeadLetterQueueService(
-        DeadLetterQueueOptions(
+    fun deadLetterQueue(): DeadLetterQueue = DeadLetterQueue(
+        DeadLetterQueue.Options(
             enabled = true,
-            type = DeadLetterQueueOptions.StorageType.FILE,
+            type = DeadLetterQueue.Options.StorageType.FILE,
             filePath = "dlq/failed-events.jsonl",
         ),
     )
 
     @Bean
     fun resilientExecutor(
-        dlqService: DeadLetterQueueService,
-    ): ResilientExecutor = DefaultResilientExecutor(RetryStrategy.DEFAULT, dlqService, useDlq = true)
+        dlqService: DeadLetterQueue,
+    ): ResilientExecutor = ResilientExecutor(
+        ResilientExecutor.Options(
+            retryStrategy = RetryStrategy.DEFAULT,
+            useDlq = true,
+        ),
+        dlqService,
+    )
 }

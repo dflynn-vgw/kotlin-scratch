@@ -38,16 +38,23 @@ class ExampleUsageConfiguration {
      */
     // @Bean
     fun customResilientExecutor(
-        dlqService: DeadLetterQueueService,
-    ): ResilientExecutor = DefaultResilientExecutor(
-        RetryStrategy(
-            maxAttempts = 5,
-            initialDelay = 200.milliseconds,
-            maxDelay = 30.seconds,
-            backoffMultiplier = 1.8,
+        dlqService: DeadLetterQueue,
+    ): ResilientExecutor = ResilientExecutor(
+
+        ResilientExecutor.Options(
+            retryStrategy = RetryStrategy(
+                maxAttempts = 5,
+                initialDelay = 200.milliseconds,
+                maxDelay = 5.seconds,
+                backoffMultiplier = 2.0,
+                retryableExceptions = setOf(
+                    // Specify exception types that should trigger a retry
+                    // e.g., TransientDatabaseException::class.java,
+                ),
+            ),
+            useDlq = true,
         ),
         dlqService = dlqService,
-        useDlq = true,
     )
 
     // @Bean
