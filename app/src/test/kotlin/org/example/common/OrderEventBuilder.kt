@@ -14,12 +14,12 @@ class OrderEventBuilder(
     private val id: UUID = UUID.fromString(id)
 
     /** Build a list of events of the specified types */
-    fun build(orderId: String, customerId: String, eventTypes: List<Event.EventType>, startingVersion: Int = 1): List<Event<Any>> = eventTypes.mapIndexed { index, eventType ->
+    fun build(orderId: String, customerId: String, eventTypes: List<Event.EventType>, startingVersion: Int = 1): List<Event<*>> = eventTypes.mapIndexed { index, eventType ->
         buildEvent(orderId, customerId, eventType, startingVersion + index)
     }
 
     /** Build an event of the specified type */
-    private fun buildEvent(orderId: String, customerId: String, eventType: Event.EventType, version: Int): Event<Any> = when (eventType) {
+    private fun buildEvent(orderId: String, customerId: String, eventType: Event.EventType, version: Int): Event<*> = when (eventType) {
         Event.EventType.ORDER_PLACED -> OrderEvents.OrderPlacedEvent(
             id = id,
             version = version,

@@ -2,6 +2,7 @@ plugins {
     // Kotlin + Spring
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.serialization)
 
     // Spring Boot + Dependency Management
     alias(libs.plugins.spring.boot)

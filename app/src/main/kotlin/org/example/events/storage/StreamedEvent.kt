@@ -1,5 +1,7 @@
 package org.example.events.storage
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import org.example.events.Event
 
 /**
@@ -7,7 +9,8 @@ import org.example.events.Event
  * Enables consumers to be aware of event positions for idempotent processing
  * and explicit bookmark management.
  */
+@Serializable
 data class StreamedEvent(
-    val event: Event<Any>,
+    val event: Event<*>,
     val offset: StreamOffset,
 )

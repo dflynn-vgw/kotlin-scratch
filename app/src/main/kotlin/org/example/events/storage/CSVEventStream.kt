@@ -22,12 +22,12 @@ class CSVEventStream(
 ) : EventStream {
 
     private val eventsCachelock = ReentrantReadWriteLock()
-    private var eventsCache: List<Event<Any>>? = null
+    private var eventsCache: List<Event<*>>? = null
 
     private val bookmarksLock = ReentrantReadWriteLock()
     private val bookmarksCache = mutableMapOf<String, Bookmark>()
 
-    override fun stream(fromPosition: Long, batchSize: Int): Flow<Event<Any>> = flow {
+    override fun stream(fromPosition: Long, batchSize: Int): Flow<Event<*>> = flow {
         require(fromPosition >= 0) { "fromPosition must be non-negative" }
         require(batchSize > 0) { "batchSize must be positive" }
 
@@ -85,7 +85,7 @@ class CSVEventStream(
         }
     }
 
-    private fun loadEvents(): List<Event<Any>> {
+    private fun loadEvents(): List<Event<*>> {
         eventsCache?.let { return it }
 
         // Load from file (must acquire write lock)
@@ -98,14 +98,14 @@ class CSVEventStream(
         }
     }
 
-    private fun readEventsFromCsv(): List<Event<Any>> {
+    private fun readEventsFromCsv(): List<Event<*>> {
         val csvFile = File(eventsCsvPath)
 
         if (!csvFile.exists()) {
             throw IllegalArgumentException("Events CSV file not found: $eventsCsvPath")
         }
 
-        val events = mutableListOf<Event<Any>>()
+        val events = mutableListOf<Event<*>>()
         val lines = csvFile.readLines()
 
         // Skip header (line 0)
@@ -145,7 +145,7 @@ class CSVEventStream(
         eventType: Event.EventType,
         timestamp: Long,
         lineNumber: Int,
-    ): Event<Any> {
+    ): Event<*> {
         // Use version based on line number (1-indexed becomes version)
         val version = lineNumber
 

@@ -6,7 +6,7 @@ import org.example.events.Event
 /** Event store with streaming and position tracking capabilities for continuous event consumption */
 interface EventStream {
     /** Stream events from a given position onwards */
-    fun stream(fromPosition: Long = 0, batchSize: Int = 1): Flow<Event<Any>>
+    fun stream(fromPosition: Long = 0, batchSize: Int = 1): Flow<Event<*>>
 
     /** Save a named bookmark (consumer progress checkpoint) */
     suspend fun saveBookmark(name: String, position: Long)

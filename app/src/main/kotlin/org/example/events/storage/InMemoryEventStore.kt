@@ -5,10 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** In-memory implementation of the EventStore for testing or lightweight scenarios */
 open class InMemoryEventStore(
-    seedEvents: List<Event<Any>> = emptyList(),
+    seedEvents: List<Event<*>> = emptyList(),
 ) : EventStore {
     // In-memory store mapping stream IDs to their respective events (thread-safe)
-    protected val store = ConcurrentHashMap<String, MutableList<Event<Any>>>()
+    protected val store = ConcurrentHashMap<String, MutableList<Event<*>>>()
 
     init {
         // Seed the store with initial events if provided
@@ -18,18 +18,18 @@ open class InMemoryEventStore(
     }
 
     /** Save a single event to the store */
-    override suspend fun save(event: Event<Any>) {
+    override suspend fun save(event: Event<*>) {
         // Add the event to the list for its stream ID, creating the list if it doesn't exist
         store.computeIfAbsent(event.streamId) { mutableListOf() }.add(event)
     }
 
     /** Save multiple events to the store */
-    override suspend fun save(events: List<Event<Any>>) {
+    override suspend fun save(events: List<Event<*>>) {
         events.forEach { save(it) }
     }
 
     /** Read events from a specific stream starting from a given version */
-    override suspend fun read(streamId: String, fromVersion: Int): List<Event<Any>> = store[streamId]
+    override suspend fun read(streamId: String, fromVersion: Int): List<Event<*>> = store[streamId]
         ?.filter { it.version >= fromVersion }
         ?.sortedBy { it.version }
         ?: emptyList()

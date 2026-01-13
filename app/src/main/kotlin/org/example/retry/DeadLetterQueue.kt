@@ -16,7 +16,7 @@ import java.time.Instant
  * Events that fail after exhausting all retry attempts are sent to the DLQ
  * for later investigation and potential reprocessing.
  */
-class DeadLetterQueue(
+open class DeadLetterQueue(
     private val options: Options,
     private val logger: Logger = LoggerFactory.getLogger(DeadLetterQueue::class.java),
 ) {
@@ -25,7 +25,7 @@ class DeadLetterQueue(
      *
      * @param entry The DeadLetterEntry containing event and failure details
      */
-    fun enqueue(entry: Entry) {
+    open fun enqueue(entry: Entry) {
         if (!options.enabled) {
             logger.warn(
                 "DLQ is disabled - event at position {} will be dropped. Details: {}",
@@ -63,7 +63,13 @@ class DeadLetterQueue(
         val dlqPath = Path.of(options.filePath)
         Files.createDirectories(dlqPath.parent)
 
-        val json = entry.toJSON()
+        val json = try {
+            entry.toJSON()
+        } catch (e: Exception) {
+            // Fallback to simple string representation if serialization fails
+            logger.warn("Failed to serialize DLQ entry, using fallback representation: {}", e.message)
+            """{"position":${entry.streamedEvent.offset.position},"failureReason":"${entry.failureReason}","attemptCount":${entry.attemptCount}}"""
+        }
         Files.writeString(dlqPath, "$json\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
     }
 
@@ -106,6 +112,6 @@ class DeadLetterQueue(
         val stackTrace: String,
         val attemptCount: Int,
         val retriable: Boolean,
-        val enqueuedAt: Instant = Instant.now(),
+        @kotlinx.serialization.Contextual val enqueuedAt: Instant = Instant.now(),
     )
 }

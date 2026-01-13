@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** In-memory stream with bookmark support */
 class InMemoryEventStream(
-    seedEvents: List<Event<Any>> = emptyList(),
+    seedEvents: List<Event<*>> = emptyList(),
     private val fixedTime: Long? = null,
 ) : EventStream {
 
@@ -18,21 +18,21 @@ class InMemoryEventStream(
     private val bookmarks = ConcurrentHashMap<String, Bookmark>()
 
     // Global event log in order (built from seed + saves) with synchronization (thread-safe)
-    private val eventLog = Collections.synchronizedList(mutableListOf<Event<Any>>())
+    private val eventLog = Collections.synchronizedList(mutableListOf<Event<*>>())
 
     init {
         eventLog.addAll(seedEvents)
     }
 
     /** Stream events from a given position onwards */
-    override fun stream(fromPosition: Long, batchSize: Int): Flow<Event<Any>> = flow {
+    override fun stream(fromPosition: Long, batchSize: Int): Flow<Event<*>> = flow {
         require(fromPosition >= 0) { "fromPosition must be positive" }
         require(batchSize > 0) { "batchSize must be positive" }
 
         // Ensure fromPosition fits in Int for indexing purposes (eventLog uses Int indices)
         require(fromPosition <= Int.MAX_VALUE) { "fromPosition $fromPosition exceeds Int.MAX_VALUE" }
 
-        val events: List<Event<Any>>
+        val events: List<Event<*>>
 
         /* Synchronized access to the event log to ensure thread safety
             - The synchronized block creates a snapshot (events list).
