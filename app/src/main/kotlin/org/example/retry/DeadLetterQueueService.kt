@@ -22,30 +22,22 @@ class DeadLetterQueueService(
     private val logger: Logger = LoggerFactory.getLogger(DeadLetterQueueService::class.java),
 ) {
 
-    /**
-     * Send a failed event to the DLQ.
+    /** Enqueue a failed event into the Dead Letter Queue.
      *
-     * @param failure The retry failure containing the event and error details
+     * @param entry The DeadLetterEntry containing event and failure details
      */
-    suspend fun enqueue(failure: RetryOutcome.Failure) {
+    suspend fun enqueue(entry: DeadLetterEntry) {
         if (!options.enabled) {
             logger.warn(
-                "DLQ is disabled - event at position {} will be dropped",
-                failure.streamedEvent.offset.position,
+                "DLQ is disabled - event at position {} will be dropped. Details: {}",
+                entry.streamedEvent.offset.position,
+                entry.streamedEvent.toJSON(),
             )
             return
         }
 
         try {
-            val dlqEntry = DeadLetterEntry(
-                streamedEvent = failure.streamedEvent,
-                failureReason = failure.lastException.message ?: "Unknown error",
-                exceptionType = failure.lastException::class.java.name,
-                stackTrace = failure.lastException.stackTraceToString(),
-                attemptCount = failure.attemptCount,
-                retriable = failure.retriable,
-                enqueuedAt = Instant.now(),
-            )
+            val dlqEntry = entry.copy(enqueuedAt = Instant.now())
 
             when (options.type) {
                 DeadLetterQueueOptions.StorageType.FILE -> writeToFile(dlqEntry)
@@ -56,13 +48,13 @@ class DeadLetterQueueService(
 
             logger.info(
                 "Event at position {} sent to DLQ (type: {})",
-                failure.streamedEvent.offset.position,
+                entry.streamedEvent.offset.position,
                 options.type,
             )
         } catch (e: Exception) {
             logger.error(
                 "Failed to enqueue event at position {} to DLQ",
-                failure.streamedEvent.offset.position,
+                entry.streamedEvent.offset.position,
                 e,
             )
         }

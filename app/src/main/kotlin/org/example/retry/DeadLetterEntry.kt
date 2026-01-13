@@ -13,5 +13,5 @@ data class DeadLetterEntry(
     val stackTrace: String,
     val attemptCount: Int,
     val retriable: Boolean,
-    val enqueuedAt: Instant,
+    val enqueuedAt: Instant = Instant.now(),
 )
