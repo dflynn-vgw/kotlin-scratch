@@ -59,7 +59,7 @@ class InMemoryEventStreamTests {
         object CONTEXT {
             lateinit var eventStream: EventStream
 
-            lateinit var events: List<Event<Any>>
+            lateinit var events: List<Event<*>>
 
             /** Fixed test time for all tests ("2021-09-06T00:00:00Z") */
             const val TIME = 1630886400000L
