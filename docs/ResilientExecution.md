@@ -13,27 +13,27 @@ The resilient execution framework provides a unified approach to handling transi
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Process Manager / Consumer              │
-│                                                             │
+┌────────────────────────────────────────────────────────────┐
+│                     Process Manager / Consumer             │
+│                                                            │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │              ResilientExecutor                        │  │
-│  │                                                       │  │
-│  │  1. Execute action                                    │  │
-│  │  2. On failure, check if retriable                    │  │
-│  │  3. Retry with exponential backoff                    │  │
+│  │              ResilientExecutor                       │  │
+│  │                                                      │  │
+│  │  1. Execute action                                   │  │
+│  │  2. On failure, check if retriable                   │  │
+│  │  3. Retry with exponential backoff                   │  │
 │  │  4. Send to DLQ if all retries exhausted             │  │
 │  └──────────────────────────────────────────────────────┘  │
-│            │                           │                    │
-│            │ (retry)                   │ (failed)           │
-│            ▼                           ▼                    │
+│            │                           │                   │
+│            │ (retry)                   │ (failed)          │
+│            ▼                           ▼                   │
 │  ┌─────────────────┐        ┌──────────────────────┐       │
 │  │ RetryStrategy   │        │  DeadLetterQueue     │       │
 │  │ - maxAttempts   │        │  - FILE              │       │
 │  │ - delays        │        │  - LOG               │       │
 │  │ - backoff       │        │  - DATABASE (future) │       │
 │  └─────────────────┘        └──────────────────────┘       │
-└─────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────┘
 ```
 
 ## ResilientExecutor
