@@ -1,6 +1,7 @@
 package org.example.retry
 
 import org.example.common.OrderEventBuilder
+import org.example.common.extensions.fromJSON
 import org.example.events.Event
 import org.example.events.storage.StreamOffset
 import org.example.events.storage.StreamedEvent
@@ -36,9 +37,7 @@ class DeadLetterQueueTest {
         assertTrue(Files.exists(filePath))
         val lines = Files.readAllLines(filePath)
         assertEquals(1, lines.size)
-        assertTrue(lines[0].contains("\"streamedEvent\""))
-        assertTrue(lines[0].contains("\"failureReason\":\"Test failure\""))
-        assertTrue(lines[0].contains("\"attemptCount\":3"))
+        assertEquals(entry, lines[0].fromJSON())
     }
 
     @Test
@@ -110,53 +109,15 @@ class DeadLetterQueueTest {
             ),
         )
 
-        val exception = IOException("Connection timeout")
-        val entry = DeadLetterQueue.Entry(
-            streamedEvent = createTestEvent(100),
-            failureReason = exception.message ?: "Unknown",
-            exceptionType = exception.javaClass.name,
-            stackTrace = exception.stackTraceToString(),
-            attemptCount = 5,
-            retriable = true,
-            enqueuedAt = Instant.now(),
-        )
+        val entry = createTestEntry(position = 1, exception = IOException("Connection timeout"))
 
         dlq.enqueue(entry)
 
         val json = Files.readString(filePath)
-        assertTrue(json.contains("\"failureReason\":\"Connection timeout\""))
-        assertTrue(json.contains("\"exceptionType\":\"java.io.IOException\""))
-        assertTrue(json.contains("\"attemptCount\":5"))
-        assertTrue(json.contains("\"retriable\":true"))
-        assertTrue(json.contains("\"enqueuedAt\""))
-        assertTrue(json.contains("\"stackTrace\""))
-    }
-
-    @Test
-    fun `should update enqueuedAt timestamp when enqueuing`() {
-        val filePath = tempDir.resolve("timestamp.jsonl")
-        val dlq = DeadLetterQueue(
-            DeadLetterQueue.Options(
-                enabled = true,
-                type = DeadLetterQueue.Options.StorageType.FILE,
-                filePath = filePath.toString(),
-            ),
-        )
-
-        val oldTimestamp = Instant.now().minusSeconds(100)
-        val entry = createTestEntry(position = 1, enqueuedAt = oldTimestamp)
-
-        dlq.enqueue(entry)
-
-        // Verify the timestamp was updated (newer than the old one)
-        val json = Files.readString(filePath)
-        // The new timestamp should be recent (within last few seconds)
-        assertTrue(json.contains("\"enqueuedAt\""))
-        assertFalse(json.contains(oldTimestamp.toString())) // Old timestamp shouldn't be there
+        assertEquals(entry, json.fromJSON())
     }
 
     // Helper functions
-
     private fun createTestEvent(position: Long): StreamedEvent {
         val builder = OrderEventBuilder(
             id = "00000000-0000-0000-0000-000000000000",
@@ -177,14 +138,23 @@ class DeadLetterQueueTest {
 
     private fun createTestEntry(
         position: Long,
-        enqueuedAt: Instant = Instant.now(),
+        attempts: Int = 3,
+        retriable: Boolean = true,
+        exception: Exception = Exception("Test failure"),
+        enqueuedAt: Long = FIXED_TIMESTAMP,
+        enqueuedBy: String = "DeadLetterQueueTest",
     ): DeadLetterQueue.Entry = DeadLetterQueue.Entry(
         streamedEvent = createTestEvent(position),
-        failureReason = "Test failure",
-        exceptionType = "java.io.IOException",
-        stackTrace = "Stack trace...",
-        attemptCount = 3,
-        retriable = true,
+        failureReason = exception.message ?: "Unknown",
+        exceptionType = exception.javaClass.name,
+        stackTrace = exception.stackTraceToString(),
+        attemptCount = attempts,
+        retriable = retriable,
         enqueuedAt = enqueuedAt,
+        enqueuedBy = enqueuedBy,
     )
+
+    private companion object {
+        const val FIXED_TIMESTAMP = 1625158800000L // July 1, 2021 10:00:00 AM UTC
+    }
 }

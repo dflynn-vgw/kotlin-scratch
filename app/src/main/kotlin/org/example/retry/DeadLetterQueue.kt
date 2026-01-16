@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.time.Instant
 
 /**
  * Service for managing the Dead Letter Queue (DLQ).
@@ -36,13 +35,11 @@ open class DeadLetterQueue(
         }
 
         try {
-            val dlqEntry = entry.copy(enqueuedAt = Instant.now())
-
             when (options.type) {
-                Options.StorageType.FILE -> writeToFile(dlqEntry)
-                Options.StorageType.LOG -> writeToLog(dlqEntry)
-                // StorageType.DATABASE -> writeToDatabase(dlqEntry) // Future implementation
-                // StorageType.KAFKA -> writeToKafka(dlqEntry)         // Future implementation
+                Options.StorageType.FILE -> writeToFile(entry)
+                Options.StorageType.LOG -> writeToLog(entry)
+                // StorageType.DATABASE -> writeToDatabase(entry) // Future implementation
+                // StorageType.KAFKA -> writeToKafka(entry)       // Future implementation
             }
 
             logger.info(
@@ -112,6 +109,7 @@ open class DeadLetterQueue(
         val stackTrace: String,
         val attemptCount: Int,
         val retriable: Boolean,
-        @kotlinx.serialization.Contextual val enqueuedAt: Instant = Instant.now(),
+        val enqueuedAt: Long,
+        val enqueuedBy: String,
     )
 }

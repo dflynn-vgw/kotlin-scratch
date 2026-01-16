@@ -29,7 +29,7 @@ class ExampleUsageConfiguration {
         resilientExecutor: ResilientExecutor,
     ): EventConsumer = DefaultEventConsumer { events ->
         events.forEach { event ->
-            resilientExecutor.execute(event) { processOrderEvent(event) }
+            resilientExecutor.execute("simpleResilientConsumer", event) { processOrderEvent(event) }
         }
     }
 

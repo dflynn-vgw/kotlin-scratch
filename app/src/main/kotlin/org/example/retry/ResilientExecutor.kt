@@ -12,7 +12,15 @@ class ResilientExecutor(
     private val dlqService: DeadLetterQueue,
     private val logger: Logger = LoggerFactory.getLogger(ResilientExecutor::class.java),
 ) {
-    fun execute(event: StreamedEvent, action: () -> Unit): Outcome {
+    /** Execute the given action with retry logic and DLQ handling. */
+    fun execute(
+        /** The source identifier for logging and DLQ purposes. */
+        source: String,
+        /** The event being processed. */
+        event: StreamedEvent,
+        /** The action to execute with retry logic. */
+        action: () -> Unit,
+    ): Outcome {
         val (retryStrategy, useDlq) = options
         var lastException: Throwable? = null
         var attemptCount = 0
@@ -49,13 +57,13 @@ class ResilientExecutor(
 
         // Send to DLQ if failed
         if (useDlq) {
-            enqueueToDlq(event, lastException!!, attemptCount, NonRetriableExceptions.isRetriable(lastException, retryStrategy.retryableExceptions))
+            enqueueToDlq(source, event, lastException!!, attemptCount, NonRetriableExceptions.isRetriable(lastException, retryStrategy.retryableExceptions))
         }
         return Outcome.Failure(attemptCount, lastException!!)
     }
 
     /** Enqueue the failed event to the Dead Letter Queue (DLQ). */
-    private fun enqueueToDlq(event: StreamedEvent, lastException: Throwable, attemptCount: Int, retriable: Boolean) {
+    private fun enqueueToDlq(source: String, event: StreamedEvent, lastException: Throwable, attemptCount: Int, retriable: Boolean) {
         runBlocking {
             dlqService.enqueue(
                 DeadLetterQueue.Entry(
@@ -65,6 +73,8 @@ class ResilientExecutor(
                     stackTrace = lastException.stackTraceToString(),
                     attemptCount = attemptCount,
                     retriable = retriable,
+                    enqueuedAt = System.currentTimeMillis(),
+                    enqueuedBy = source,
                 ),
             )
         }

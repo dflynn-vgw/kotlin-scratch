@@ -12,6 +12,7 @@ import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
 class ResilientExecutorTest {
+    private val source = this.javaClass.simpleName
     private val mockLogger = object : Logger by org.slf4j.LoggerFactory.getLogger(ResilientExecutorTest::class.java) {}
 
     @Test
@@ -20,7 +21,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(0)
         var callCount = 0
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             callCount++
             // Success immediately
         }
@@ -36,7 +37,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(1)
         var callCount = 0
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(this.javaClass.simpleName, event) {
             callCount++
             if (callCount < 3) {
                 throw IOException("Transient failure")
@@ -55,7 +56,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(2)
         var callCount = 0
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             callCount++
             throw IOException("Persistent failure")
         }
@@ -73,7 +74,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(3)
         var callCount = 0
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             callCount++
             throw NullPointerException("Programming error")
         }
@@ -94,7 +95,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(4)
         var callCount = 0
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             callCount++
             throw RuntimeException("Not in retriable list")
         }
@@ -111,7 +112,7 @@ class ResilientExecutorTest {
         val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = true)
         val event = createTestEvent(5)
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             throw IOException("Failed")
         }
 
@@ -128,7 +129,7 @@ class ResilientExecutorTest {
         val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = false)
         val event = createTestEvent(6)
 
-        val outcome = executor.execute(event) {
+        val outcome = executor.execute(source, event) {
             throw IOException("Failed")
         }
 
@@ -148,7 +149,7 @@ class ResilientExecutorTest {
         val event = createTestEvent(7)
         var callCount = 0
 
-        executor.execute(event) {
+        executor.execute(source, event) {
             callCount++
             throw IOException("Fail")
         }
@@ -165,7 +166,7 @@ class ResilientExecutorTest {
         val executor = createExecutor(maxAttempts = 3, dlq = dlq, useDlq = true)
         val event = createTestEvent(8)
 
-        executor.execute(event) {
+        executor.execute(source, event) {
             throw NullPointerException("Bug")
         }
 
