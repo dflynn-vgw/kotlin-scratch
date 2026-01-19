@@ -76,7 +76,13 @@ fun resilientExecutor(dlqService: DeadLetterQueue): ResilientExecutor {
     return ResilientExecutor(
         options = ResilientExecutor.Options(
             retryStrategy = RetryStrategy.DEFAULT,
-            useDlq = true
+            useDlq = true,
+            dlqOptions = DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = "dlq/failed-events.jsonl",
+                replayMode = DeadLetterQueue.Options.ReplayMode.MANUAL_REVIEW
+            )
         ),
         dlqService = dlqService
     )
@@ -239,6 +245,69 @@ Each DLQ entry contains:
 - **attemptCount** - Number of attempts made
 - **retriable** - Whether the exception was considered retriable
 - **enqueuedAt** - Timestamp when added to DLQ
+- **enqueuedBy** - Source identifier of the component that enqueued the entry
+- **status** - Current lifecycle status (PENDING, REPLAY, RESOLVED, FAILED, DISCARDED)
+
+### Replay Modes
+
+The DLQ supports two replay modes that determine the initial status of entries:
+
+#### MANUAL_REVIEW (Default)
+
+Entries are created with `PENDING` status and require engineer intervention before reprocessing:
+
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    replayMode = DeadLetterQueue.Options.ReplayMode.MANUAL_REVIEW
+)
+```
+
+**Use when:**
+- You want engineers to investigate failures before retry
+- Failures might indicate data quality issues
+- Manual triage is part of your incident response process
+
+**Workflow:**
+1. Event fails → Entry created with status `PENDING`
+2. Engineer investigates the failure
+3. Engineer marks entry as `REPLAY` (or `DISCARDED` if invalid)
+4. Reprocessing system picks up `REPLAY` entries
+5. After successful replay → status becomes `RESOLVED`
+
+#### AUTOMATIC_REPLAY
+
+Entries are created with `REPLAY` status and are immediately ready for reprocessing:
+
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    replayMode = DeadLetterQueue.Options.ReplayMode.AUTOMATIC_REPLAY
+)
+```
+
+**Use when:**
+- Failures are typically transient (network issues, temporary outages)
+- You have high confidence in automatic retry safety
+- Manual review overhead is too high for your volume
+
+**Workflow:**
+1. Event fails → Entry created with status `REPLAY`
+2. Reprocessing system automatically picks up entry
+3. After successful replay → status becomes `RESOLVED`
+4. If replay fails → status becomes `FAILED` (may require manual review)
+
+### Entry Status Lifecycle
+
+The `Entry.Status` enum tracks the lifecycle of DLQ entries:
+
+- **PENDING** - Awaiting manual review/investigation
+- **REPLAY** - Ready for reprocessing (either set automatically or by engineer)
+- **RESOLVED** - Successfully reprocessed
+- **FAILED** - Reprocessing failed
+- **DISCARDED** - Entry marked as invalid/not worth reprocessing
 
 ### Disabling DLQ
 
@@ -372,13 +441,58 @@ class DlqReprocessor(
     fun reprocessFailedEvents(dlqFilePath: String) {
         val entries = Files.readAllLines(Path.of(dlqFilePath))
             .map { it.fromJSON<DeadLetterQueue.Entry>() }
+            .filter { it.status == DeadLetterQueue.Entry.Status.REPLAY } // Only replay marked entries
         
         entries.forEach { entry ->
             logger.info("Reprocessing event at position ${entry.streamedEvent.offset.position}")
-            resilientExecutor.execute(entry.streamedEvent) {
+            val outcome = resilientExecutor.execute("dlq-reprocessor", entry.streamedEvent) {
                 // Your processing logic
             }
+            
+            // Update status based on outcome
+            when (outcome) {
+                is ResilientExecutor.Outcome.Success -> 
+                    updateEntryStatus(entry, DeadLetterQueue.Entry.Status.RESOLVED)
+                is ResilientExecutor.Outcome.Failure -> 
+                    updateEntryStatus(entry, DeadLetterQueue.Entry.Status.FAILED)
+            }
         }
+    }
+    
+    private fun updateEntryStatus(entry: DeadLetterQueue.Entry, newStatus: DeadLetterQueue.Entry.Status) {
+        // Implementation depends on DLQ storage type
+        // For FILE: rewrite the JSONL file with updated status
+        // For DATABASE: UPDATE statement
+    }
+}
+```
+
+### 6. Manual Status Management
+
+For MANUAL_REVIEW mode, provide tooling to change entry status:
+
+```kotlin
+class DlqManager {
+    fun markForReplay(dlqFilePath: String, position: Long) {
+        val entries = Files.readAllLines(Path.of(dlqFilePath))
+            .map { it.fromJSON<DeadLetterQueue.Entry>() }
+            .map { entry ->
+                if (entry.streamedEvent.offset.position == position) {
+                    entry.copy(status = DeadLetterQueue.Entry.Status.REPLAY)
+                } else {
+                    entry
+                }
+            }
+        
+        // Rewrite file with updated entries
+        Files.writeString(
+            Path.of(dlqFilePath),
+            entries.joinToString("\n") { it.toJSON() } + "\n"
+        )
+    }
+    
+    fun discardEntry(dlqFilePath: String, position: Long) {
+        // Similar implementation, setting status to DISCARDED
     }
 }
 ```

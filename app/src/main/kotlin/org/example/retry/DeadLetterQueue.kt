@@ -80,7 +80,9 @@ open class DeadLetterQueue(
             |  Exception Type: ${entry.exceptionType}
             |  Attempt Count: ${entry.attemptCount}
             |  Retriable: ${entry.retriable}
+            |  Status: ${entry.status}
             |  Enqueued At: ${entry.enqueuedAt}
+            |  Enqueued By: ${entry.enqueuedBy}
             |  Stack Trace: ${entry.stackTrace}
             """.trimMargin(),
         )
@@ -91,12 +93,27 @@ open class DeadLetterQueue(
         val enabled: Boolean = true,
         val type: StorageType = StorageType.FILE,
         val filePath: String = "dlq/failed-events.jsonl",
+        val replayMode: ReplayMode = ReplayMode.MANUAL_REVIEW,
     ) {
         enum class StorageType {
             FILE,
             LOG,
             // DATABASE, // Future implementation for production use
             // KAFKA,   // Future implementation for production use
+        }
+
+        /**
+         * Determines how DLQ entries are initially marked and whether they require manual review.
+         *
+         * - MANUAL_REVIEW: Entries start with PENDING status, requiring engineer intervention to mark as REPLAY
+         * - AUTOMATIC_REPLAY: Entries start with REPLAY status, ready for immediate reprocessing
+         */
+        enum class ReplayMode {
+            /** Entries require manual review before replay (initial status: PENDING) */
+            MANUAL_REVIEW,
+
+            /** Entries are automatically marked for replay (initial status: REPLAY) */
+            AUTOMATIC_REPLAY,
         }
     }
 
@@ -111,5 +128,34 @@ open class DeadLetterQueue(
         val retriable: Boolean,
         val enqueuedAt: Long,
         val enqueuedBy: String,
-    )
+        val status: Status = Status.PENDING,
+    ) {
+        /**
+         * Status of a DLQ entry in its lifecycle.
+         *
+         * Typical flow:
+         * 1. Entry created with PENDING (manual review) or REPLAY (automatic) based on ReplayMode
+         * 2. Engineer marks PENDING entries as REPLAY after investigation
+         * 3. Reprocessing system picks up REPLAY entries
+         * 4. After successful replay, marked as RESOLVED
+         * 5. If replay fails or entry is invalid, marked as FAILED or DISCARDED
+         */
+        @Serializable
+        enum class Status {
+            /** Awaiting manual review/investigation */
+            PENDING,
+
+            /** Ready for reprocessing */
+            REPLAY,
+
+            /** Successfully reprocessed */
+            RESOLVED,
+
+            /** Reprocessing failed */
+            FAILED,
+
+            /** Entry discarded (not worth reprocessing) */
+            DISCARDED,
+        }
+    }
 }

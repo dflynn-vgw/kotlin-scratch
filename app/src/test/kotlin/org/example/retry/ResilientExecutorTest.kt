@@ -175,6 +175,44 @@ class ResilientExecutorTest {
         assertEquals(1, dlq.entries[0].attemptCount) // Only one attempt
     }
 
+    @Test
+    fun `should create DLQ entries with PENDING status in MANUAL_REVIEW mode`() {
+        val dlq = MockDeadLetterQueue()
+        val dlqOptions = DeadLetterQueue.Options(
+            enabled = true,
+            type = DeadLetterQueue.Options.StorageType.LOG,
+            replayMode = DeadLetterQueue.Options.ReplayMode.MANUAL_REVIEW,
+        )
+        val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = true, dlqOptions = dlqOptions)
+        val event = createTestEvent(9)
+
+        executor.execute(source, event) {
+            throw IOException("Failed")
+        }
+
+        assertEquals(1, dlq.entries.size)
+        assertEquals(DeadLetterQueue.Entry.Status.PENDING, dlq.entries[0].status)
+    }
+
+    @Test
+    fun `should create DLQ entries with REPLAY status in AUTOMATIC_REPLAY mode`() {
+        val dlq = MockDeadLetterQueue()
+        val dlqOptions = DeadLetterQueue.Options(
+            enabled = true,
+            type = DeadLetterQueue.Options.StorageType.LOG,
+            replayMode = DeadLetterQueue.Options.ReplayMode.AUTOMATIC_REPLAY,
+        )
+        val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = true, dlqOptions = dlqOptions)
+        val event = createTestEvent(10)
+
+        executor.execute(source, event) {
+            throw IOException("Failed")
+        }
+
+        assertEquals(1, dlq.entries.size)
+        assertEquals(DeadLetterQueue.Entry.Status.REPLAY, dlq.entries[0].status)
+    }
+
     // Helper functions
 
     private fun createExecutor(
@@ -185,6 +223,7 @@ class ResilientExecutorTest {
         retryableExceptions: Set<Class<out Throwable>> = emptySet(),
         dlq: DeadLetterQueue = MockDeadLetterQueue(),
         useDlq: Boolean = false,
+        dlqOptions: DeadLetterQueue.Options = DeadLetterQueue.Options(),
     ): ResilientExecutor {
         val strategy = RetryStrategy(
             maxAttempts = maxAttempts,
@@ -195,7 +234,7 @@ class ResilientExecutorTest {
         )
 
         return ResilientExecutor(
-            ResilientExecutor.Options(strategy, useDlq),
+            ResilientExecutor.Options(strategy, useDlq, dlqOptions),
             dlq,
             mockLogger,
         )

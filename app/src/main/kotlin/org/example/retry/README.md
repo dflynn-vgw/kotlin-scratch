@@ -172,6 +172,30 @@ fun deadLetterQueueOptions(): DeadLetterQueueOptions = DeadLetterQueueOptions(
 )
 ```
 
+### DLQ Replay Modes
+
+The DLQ supports two modes for handling failed entries:
+
+**MANUAL_REVIEW (Default)**: Entries start with `PENDING` status, requiring engineer investigation before replay.
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    filePath = "dlq/failed-events.jsonl",
+    replayMode = DeadLetterQueue.Options.ReplayMode.MANUAL_REVIEW // Default
+)
+```
+
+**AUTOMATIC_REPLAY**: Entries start with `REPLAY` status, ready for immediate reprocessing.
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    filePath = "dlq/failed-events.jsonl",
+    replayMode = DeadLetterQueue.Options.ReplayMode.AUTOMATIC_REPLAY
+)
+```
+
 ### DLQ Entry Format
 
 Each DLQ entry contains:
@@ -180,7 +204,8 @@ Each DLQ entry contains:
 - Full stack trace
 - Number of attempts made
 - Whether the failure was retriable
-- Timestamp
+- Timestamp and source identifier
+- **Status** (PENDING, REPLAY, RESOLVED, FAILED, DISCARDED)
 
 Example DLQ entry (FILE mode):
 ```json
@@ -194,7 +219,9 @@ Example DLQ entry (FILE mode):
   "stackTrace": "...",
   "attemptCount": 3,
   "retriable": true,
-  "enqueuedAt": "2026-01-13T02:57:30Z"
+  "enqueuedAt": "2026-01-13T02:57:30Z",
+  "enqueuedBy": "OrderProcessManager",
+  "status": "PENDING"
 }
 ```
 

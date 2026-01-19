@@ -75,9 +75,16 @@ class ResilientExecutor(
                     retriable = retriable,
                     enqueuedAt = System.currentTimeMillis(),
                     enqueuedBy = source,
+                    status = determineInitialStatus(),
                 ),
             )
         }
+    }
+
+    /** Determine the initial status for DLQ entries based on the configured replay mode. */
+    private fun determineInitialStatus(): DeadLetterQueue.Entry.Status = when (options.dlqOptions.replayMode) {
+        DeadLetterQueue.Options.ReplayMode.MANUAL_REVIEW -> DeadLetterQueue.Entry.Status.PENDING
+        DeadLetterQueue.Options.ReplayMode.AUTOMATIC_REPLAY -> DeadLetterQueue.Entry.Status.REPLAY
     }
 
     /** Represents the outcome of a retry operation. */
@@ -92,6 +99,7 @@ class ResilientExecutor(
     data class Options(
         val retryStrategy: RetryStrategy = RetryStrategy.DEFAULT,
         val useDlq: Boolean = false,
+        val dlqOptions: DeadLetterQueue.Options = DeadLetterQueue.Options(),
     )
 
     private companion object {
