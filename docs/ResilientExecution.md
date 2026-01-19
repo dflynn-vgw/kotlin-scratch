@@ -309,6 +309,123 @@ The `Entry.Status` enum tracks the lifecycle of DLQ entries:
 - **FAILED** - Reprocessing failed
 - **DISCARDED** - Entry marked as invalid/not worth reprocessing
 
+### Circuit Breaker
+
+The DLQ includes a circuit breaker to prevent system overload when failure rates are high. When the enqueue rate exceeds a configured threshold, the circuit breaker opens and rejects new entries.
+
+#### Configuration
+
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    filePath = "dlq/failed-events.jsonl",
+    circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+        enabled = true,
+        rateThreshold = 10.0,      // Max 10 events/second
+        windowMillis = 60_000       // Calculate rate over 1 minute
+    )
+)
+```
+
+**Parameters:**
+- `enabled` - Enable/disable circuit breaker (default: false)
+- `rateThreshold` - Maximum enqueue rate in events per second (default: 10.0)
+- `windowMillis` - Time window for rate calculation in milliseconds (default: 60,000 = 1 minute)
+
+#### Behavior
+
+1. **Rate Tracking**: The DLQ tracks all successful enqueue timestamps within the configured window
+2. **Rate Calculation**: Rate = (number of enqueues in window) / (window duration in seconds)
+3. **Circuit Opens**: When rate ≥ threshold, `enqueue()` returns `CircuitBreakerOpen` outcome
+4. **Rejection**: Circuit breaker rejects new entries until rate drops below threshold
+5. **Automatic Recovery**: As timestamps age out of the window, rate decreases and circuit may close
+
+#### EnqueueOutcome
+
+The `enqueue()` method now returns an `EnqueueOutcome` sealed class:
+
+```kotlin
+sealed class EnqueueOutcome {
+    abstract val currentRate: Double
+    
+    data class Success(override val currentRate: Double)
+    
+    data class Failure(
+        override val currentRate: Double,
+        val exception: Throwable
+    ) {
+        fun isCircuitBreakerOpen(): Boolean = 
+            exception is DlqThresholdExceededException
+    }
+}
+```
+
+When the circuit breaker opens, `enqueue()` returns `Failure` with a `DlqThresholdExceededException`:
+
+```kotlin
+class DlqThresholdExceededException(
+    val currentRate: Double,
+    val threshold: Double
+) : RuntimeException("DLQ circuit breaker threshold exceeded...")
+```
+
+#### Process Manager Integration
+
+Process Managers can check the circuit breaker state and halt processing:
+
+```kotlin
+class OrderProcessManager(
+    private val resilientExecutor: ResilientExecutor
+) {
+    fun processEvents(events: List<StreamedEvent>): Boolean {
+        events.forEach { event ->
+            val outcome = resilientExecutor.execute("OrderPM", event) {
+                handleOrderEvent(event)
+            }
+            
+            when (outcome) {
+                is ResilientExecutor.Outcome.Success ->
+                    logger.info("Processed event successfully")
+                    
+                is ResilientExecutor.Outcome.Failure -> {
+                    if (outcome.isCircuitBreakerOpen()) {
+                        logger.error("DLQ circuit breaker OPEN - halting event processing")
+                        return false // Stop processing
+                    }
+                    logger.error("Event failed but circuit breaker closed")
+                }
+            }
+        }
+        return true // Continue processing
+    }
+}
+```
+
+#### Monitoring Current Rate
+
+Access the current enqueue rate:
+
+```kotlin
+val dlq = DeadLetterQueue(options)
+val currentRate = dlq.getEnqueueRate() // events per second
+logger.info("Current DLQ enqueue rate: $currentRate/sec")
+```
+
+#### Use Cases
+
+**Enable circuit breaker when:**
+- Cascading failures might overwhelm your system
+- DLQ storage has limited capacity
+- High failure rates indicate systemic issues requiring immediate attention
+- You want to "fail fast" and stop processing when things go wrong
+
+**Disable circuit breaker when:**
+- You want to ensure all failures are captured regardless of rate
+- DLQ storage is effectively unlimited (e.g., Kafka topic)
+- Manual intervention is always required anyway
+- Stopping event processing causes worse problems than continuing
+
 ### Disabling DLQ
 
 ```kotlin

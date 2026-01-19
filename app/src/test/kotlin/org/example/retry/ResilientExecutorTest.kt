@@ -5,6 +5,7 @@ import org.example.events.Event
 import org.example.events.storage.StreamOffset
 import org.example.events.storage.StreamedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
@@ -213,6 +214,40 @@ class ResilientExecutorTest {
         assertEquals(DeadLetterQueue.Entry.Status.REPLAY, dlq.entries[0].status)
     }
 
+    @Test
+    fun `should include dlqOutcome in Failure result`() {
+        val dlq = MockDeadLetterQueue()
+        val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = true)
+        val event = createTestEvent(11)
+
+        val outcome = executor.execute(source, event) {
+            throw IOException("Failed")
+        }
+
+        assertTrue(outcome is ResilientExecutor.Outcome.Failure)
+        val failure = outcome as ResilientExecutor.Outcome.Failure
+        assertTrue(failure.dlqOutcome is DeadLetterQueue.EnqueueOutcome.Success)
+        assertFalse(failure.isCircuitBreakerOpen())
+    }
+
+    @Test
+    fun `should detect circuit breaker open state`() {
+        val dlq = CircuitBreakerMockDLQ(shouldTripCircuitBreaker = true)
+        val executor = createExecutor(maxAttempts = 2, dlq = dlq, useDlq = true)
+        val event = createTestEvent(12)
+
+        val outcome = executor.execute(source, event) {
+            throw IOException("Failed")
+        }
+
+        assertTrue(outcome is ResilientExecutor.Outcome.Failure)
+        val failure = outcome as ResilientExecutor.Outcome.Failure
+        assertTrue(failure.isCircuitBreakerOpen())
+        assertTrue(failure.dlqOutcome is DeadLetterQueue.EnqueueOutcome.Failure)
+        val dlqFailure = failure.dlqOutcome as DeadLetterQueue.EnqueueOutcome.Failure
+        assertTrue(dlqFailure.exception is DlqThresholdExceededException)
+    }
+
     // Helper functions
 
     private fun createExecutor(
@@ -265,8 +300,28 @@ class ResilientExecutorTest {
         ) {
         val entries = mutableListOf<Entry>()
 
-        override fun enqueue(entry: Entry) {
+        override fun enqueue(entry: Entry): EnqueueOutcome {
             entries.add(entry)
+            return EnqueueOutcome.Success(currentRate = entries.size / 60.0)
+        }
+    }
+
+    // Mock DLQ that can simulate circuit breaker behavior
+    private class CircuitBreakerMockDLQ(
+        private val shouldTripCircuitBreaker: Boolean = false,
+    ) : DeadLetterQueue(
+        Options(enabled = true, type = Options.StorageType.LOG),
+    ) {
+        override fun enqueue(entry: Entry): EnqueueOutcome = if (shouldTripCircuitBreaker) {
+            EnqueueOutcome.Failure(
+                currentRate = 15.0,
+                exception = DlqThresholdExceededException(
+                    currentRate = 15.0,
+                    threshold = 10.0,
+                ),
+            )
+        } else {
+            EnqueueOutcome.Success(currentRate = 5.0)
         }
     }
 }

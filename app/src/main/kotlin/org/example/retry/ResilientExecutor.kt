@@ -56,29 +56,62 @@ class ResilientExecutor(
         logger.error("Action failed after {} attempts", attemptCount)
 
         // Send to DLQ if failed
-        if (useDlq) {
-            enqueueToDlq(source, event, lastException!!, attemptCount, NonRetriableExceptions.isRetriable(lastException, retryStrategy.retryableExceptions))
+        val dlqOutcome = if (useDlq) {
+            enqueueToDlq(
+                source,
+                event,
+                lastException!!,
+                attemptCount,
+                NonRetriableExceptions.isRetriable(lastException, retryStrategy.retryableExceptions),
+            )
+        } else {
+            null
         }
-        return Outcome.Failure(attemptCount, lastException!!)
+
+        return Outcome.Failure(attemptCount, lastException!!, dlqOutcome)
     }
 
     /** Enqueue the failed event to the Dead Letter Queue (DLQ). */
-    private fun enqueueToDlq(source: String, event: StreamedEvent, lastException: Throwable, attemptCount: Int, retriable: Boolean) {
-        runBlocking {
-            dlqService.enqueue(
-                DeadLetterQueue.Entry(
-                    streamedEvent = event,
-                    failureReason = lastException.message ?: "Unknown error",
-                    exceptionType = lastException.javaClass.name,
-                    stackTrace = lastException.stackTraceToString(),
-                    attemptCount = attemptCount,
-                    retriable = retriable,
-                    enqueuedAt = System.currentTimeMillis(),
-                    enqueuedBy = source,
-                    status = determineInitialStatus(),
-                ),
-            )
+    private fun enqueueToDlq(
+        source: String,
+        event: StreamedEvent,
+        lastException: Throwable,
+        attemptCount: Int,
+        retriable: Boolean,
+    ): DeadLetterQueue.EnqueueOutcome = runBlocking {
+        val outcome = dlqService.enqueue(
+            DeadLetterQueue.Entry(
+                streamedEvent = event,
+                failureReason = lastException.message ?: "Unknown error",
+                exceptionType = lastException.javaClass.name,
+                stackTrace = lastException.stackTraceToString(),
+                attemptCount = attemptCount,
+                retriable = retriable,
+                enqueuedAt = System.currentTimeMillis(),
+                enqueuedBy = source,
+                status = determineInitialStatus(),
+            ),
+        )
+
+        when (outcome) {
+            is DeadLetterQueue.EnqueueOutcome.Success ->
+                logger.debug("Event enqueued to DLQ (rate: {}/sec)", String.format("%.2f", outcome.currentRate))
+
+            is DeadLetterQueue.EnqueueOutcome.Failure -> {
+                if (outcome.isCircuitBreakerOpen()) {
+                    val ex = outcome.exception as DlqThresholdExceededException
+                    logger.error(
+                        "DLQ circuit breaker OPEN - rate {}/sec exceeds threshold {}/sec",
+                        String.format("%.2f", ex.currentRate),
+                        ex.threshold,
+                    )
+                } else {
+                    logger.error("Failed to enqueue to DLQ: {}", outcome.exception.message)
+                }
+            }
         }
+
+        outcome
     }
 
     /** Determine the initial status for DLQ entries based on the configured replay mode. */
@@ -93,7 +126,14 @@ class ResilientExecutor(
         data class Success(val attemptCount: Int) : Outcome()
 
         /** Operation failed after exhausting all retry attempts. */
-        data class Failure(val attemptCount: Int, val lastException: Throwable) : Outcome()
+        data class Failure(
+            val attemptCount: Int,
+            val lastException: Throwable,
+            val dlqOutcome: DeadLetterQueue.EnqueueOutcome? = null,
+        ) : Outcome() {
+            /** Check if the DLQ circuit breaker is open. */
+            fun isCircuitBreakerOpen(): Boolean = dlqOutcome is DeadLetterQueue.EnqueueOutcome.Failure && dlqOutcome.isCircuitBreakerOpen()
+        }
     }
 
     data class Options(

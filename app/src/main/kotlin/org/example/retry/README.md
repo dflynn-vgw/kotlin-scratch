@@ -257,6 +257,57 @@ ResilienceEventConsumer(
 
 **Use when:** Event processing must be strictly sequential and you can't skip failures.
 
+## Circuit Breaker
+
+The DLQ includes circuit breaker functionality to prevent system overload during cascading failures.
+
+### Configuration
+
+```kotlin
+DeadLetterQueue.Options(
+    enabled = true,
+    type = DeadLetterQueue.Options.StorageType.FILE,
+    filePath = "dlq/failed-events.jsonl",
+    circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+        enabled = true,
+        rateThreshold = 10.0,    // 10 events/second max
+        windowMillis = 60_000     // 1 minute window
+    )
+)
+```
+
+### Behavior
+
+When enqueue rate exceeds threshold:
+1. Circuit breaker opens
+2. New enqueue attempts return `CircuitBreakerOpen` outcome
+3. Process Managers can detect this and halt processing
+
+### Process Manager Integration
+
+```kotlin
+val outcome = resilientExecutor.execute("MyPM", event) {
+    processEvent(event)
+}
+
+when (outcome) {
+    is ResilientExecutor.Outcome.Success -> { /* continue */ }
+    is ResilientExecutor.Outcome.Failure -> {
+        if (outcome.isCircuitBreakerOpen()) {
+            logger.error("Circuit breaker open - stopping event processing")
+            coordinator.stop() // Halt processing
+        }
+    }
+}
+```
+
+### Monitoring
+
+```kotlin
+val currentRate = dlqService.getEnqueueRate()
+logger.info("Current DLQ rate: $currentRate events/sec")
+```
+
 ## Testing
 
 ### Simulating Failures

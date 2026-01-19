@@ -117,6 +117,137 @@ class DeadLetterQueueTest {
         assertEquals(entry, json.fromJSON<DeadLetterQueue.Entry>())
     }
 
+    @Test
+    fun `should return Success outcome when enqueue succeeds`() {
+        val filePath = tempDir.resolve("success-dlq.jsonl")
+        val dlq = DeadLetterQueue(
+            DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = filePath.toString(),
+            ),
+        )
+
+        val outcome = dlq.enqueue(createTestEntry(position = 1))
+
+        assertTrue(outcome is DeadLetterQueue.EnqueueOutcome.Success)
+        // Rate should be 1 event / 60 seconds = ~0.0167 events/sec
+        val rate = (outcome as DeadLetterQueue.EnqueueOutcome.Success).currentRate
+        assertTrue(rate >= 0.01 && rate <= 0.02, "Expected rate around 0.0167/sec, got $rate")
+    }
+
+    @Test
+    fun `should track enqueue rate accurately`() {
+        val filePath = tempDir.resolve("rate-tracking.jsonl")
+        val dlq = DeadLetterQueue(
+            DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = filePath.toString(),
+                circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+                    enabled = false,
+                    windowMillis = 1000, // 1 second window
+                ),
+            ),
+        )
+
+        // Enqueue 5 entries quickly
+        repeat(5) {
+            dlq.enqueue(createTestEntry(position = it.toLong()))
+        }
+
+        val rate = dlq.getEnqueueRate()
+        // Rate should be ~5 events per second (5 events in 1 second window)
+        assertTrue(rate >= 4.0 && rate <= 6.0, "Expected rate around 5/sec, got $rate")
+    }
+
+    @Test
+    fun `should open circuit breaker when rate exceeds threshold`() {
+        val filePath = tempDir.resolve("circuit-breaker.jsonl")
+        val dlq = DeadLetterQueue(
+            DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = filePath.toString(),
+                circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+                    enabled = true,
+                    rateThreshold = 2.0, // 2 events per second
+                    windowMillis = 1000, // 1 second window
+                ),
+            ),
+        )
+
+        // Enqueue 3 entries (exceeds threshold of 2/sec)
+        repeat(3) {
+            dlq.enqueue(createTestEntry(position = it.toLong()))
+        }
+
+        // Next enqueue should trip circuit breaker
+        val outcome = dlq.enqueue(createTestEntry(position = 100))
+
+        assertTrue(outcome is DeadLetterQueue.EnqueueOutcome.Failure)
+        val failure = outcome as DeadLetterQueue.EnqueueOutcome.Failure
+        assertTrue(failure.isCircuitBreakerOpen())
+        assertTrue(failure.exception is DlqThresholdExceededException)
+        val ex = failure.exception as DlqThresholdExceededException
+        assertTrue(ex.currentRate >= 2.0)
+        assertEquals(2.0, ex.threshold)
+    }
+
+    @Test
+    fun `should allow enqueues when circuit breaker is disabled`() {
+        val filePath = tempDir.resolve("no-circuit-breaker.jsonl")
+        val dlq = DeadLetterQueue(
+            DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = filePath.toString(),
+                circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+                    enabled = false, // Disabled
+                    rateThreshold = 1.0,
+                    windowMillis = 1000,
+                ),
+            ),
+        )
+
+        // Enqueue many entries - should all succeed
+        repeat(10) {
+            val outcome = dlq.enqueue(createTestEntry(position = it.toLong()))
+            assertTrue(outcome is DeadLetterQueue.EnqueueOutcome.Success)
+        }
+
+        val lines = Files.readAllLines(filePath)
+        assertEquals(10, lines.size)
+    }
+
+    @Test
+    fun `should expire old timestamps from rate tracking window`() {
+        val filePath = tempDir.resolve("window-expiry.jsonl")
+        val dlq = DeadLetterQueue(
+            DeadLetterQueue.Options(
+                enabled = true,
+                type = DeadLetterQueue.Options.StorageType.FILE,
+                filePath = filePath.toString(),
+                circuitBreaker = DeadLetterQueue.Options.CircuitBreakerOptions(
+                    enabled = false,
+                    windowMillis = 100, // 100ms window
+                ),
+            ),
+        )
+
+        // Enqueue 5 entries
+        repeat(5) {
+            dlq.enqueue(createTestEntry(position = it.toLong()))
+        }
+
+        // Wait for window to expire
+        Thread.sleep(150)
+
+        // Rate should be close to 0 now (all timestamps expired)
+        val rate = dlq.getEnqueueRate()
+        assertTrue(rate < 1.0, "Expected rate < 1/sec after window expiry, got $rate")
+    }
+
     // Helper functions
     private fun createTestEvent(position: Long): StreamedEvent {
         val builder = OrderEventBuilder(

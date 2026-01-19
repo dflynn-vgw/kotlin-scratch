@@ -8,6 +8,20 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.util.Collections
+
+/**
+ * Exception thrown when DLQ circuit breaker threshold is exceeded.
+ *
+ * @property currentRate The current enqueue rate (events per second)
+ * @property threshold The configured threshold that was exceeded
+ */
+class DlqThresholdExceededException(
+    val currentRate: Double,
+    val threshold: Double,
+) : RuntimeException(
+    "DLQ circuit breaker threshold exceeded: current rate $currentRate/sec exceeds threshold $threshold/sec",
+)
 
 /**
  * Service for managing the Dead Letter Queue (DLQ).
@@ -19,19 +33,41 @@ open class DeadLetterQueue(
     private val options: Options,
     private val logger: Logger = LoggerFactory.getLogger(DeadLetterQueue::class.java),
 ) {
+    // Track enqueue timestamps for rate calculation (thread-safe list)
+    private val enqueueTimestamps: MutableList<Long> = Collections.synchronizedList(mutableListOf())
 
     /** Enqueue a failed event into the Dead Letter Queue.
      *
      * @param entry The DeadLetterEntry containing event and failure details
+     * @return EnqueueOutcome indicating success or circuit breaker trip
      */
-    open fun enqueue(entry: Entry) {
+    open fun enqueue(entry: Entry): EnqueueOutcome {
         if (!options.enabled) {
             logger.warn(
                 "DLQ is disabled - event at position {} will be dropped. Details: {}",
                 entry.streamedEvent.offset.position,
                 entry.streamedEvent.toJSON(),
             )
-            return
+            return EnqueueOutcome.Success(currentRate = 0.0)
+        }
+
+        // Check circuit breaker before attempting to enqueue
+        val currentRate = getCurrentEnqueueRate()
+        if (options.circuitBreaker.enabled && currentRate >= options.circuitBreaker.rateThreshold) {
+            val exception = DlqThresholdExceededException(
+                currentRate = currentRate,
+                threshold = options.circuitBreaker.rateThreshold,
+            )
+            logger.error(
+                "Circuit breaker OPEN - DLQ enqueue rate ({} events/sec) exceeds threshold ({} events/sec). Event at position {} rejected.",
+                String.format("%.2f", currentRate),
+                options.circuitBreaker.rateThreshold,
+                entry.streamedEvent.offset.position,
+            )
+            return EnqueueOutcome.Failure(
+                currentRate = currentRate,
+                exception = exception,
+            )
         }
 
         try {
@@ -42,16 +78,26 @@ open class DeadLetterQueue(
                 // StorageType.KAFKA -> writeToKafka(entry)       // Future implementation
             }
 
+            // Record successful enqueue for rate tracking
+            recordEnqueue()
+
             logger.info(
-                "Event at position {} sent to DLQ (type: {})",
+                "Event at position {} sent to DLQ (type: {}, current rate: {}/sec)",
                 entry.streamedEvent.offset.position,
                 options.type,
+                String.format("%.2f", getCurrentEnqueueRate()),
             )
+
+            return EnqueueOutcome.Success(currentRate = getCurrentEnqueueRate())
         } catch (e: Exception) {
             logger.error(
                 "Failed to enqueue event at position {} to DLQ",
                 entry.streamedEvent.offset.position,
                 e,
+            )
+            return EnqueueOutcome.Failure(
+                currentRate = getCurrentEnqueueRate(),
+                exception = e,
             )
         }
     }
@@ -88,12 +134,44 @@ open class DeadLetterQueue(
         )
     }
 
+    /** Record an enqueue event for rate tracking. */
+    private fun recordEnqueue() {
+        val now = System.currentTimeMillis()
+        enqueueTimestamps.add(now)
+
+        // Remove timestamps outside the window
+        val windowStart = now - options.circuitBreaker.windowMillis
+        synchronized(enqueueTimestamps) {
+            enqueueTimestamps.removeAll { it < windowStart }
+        }
+    }
+
+    /** Calculate current enqueue rate (events per second). */
+    private fun getCurrentEnqueueRate(): Double {
+        val now = System.currentTimeMillis()
+        val windowStart = now - options.circuitBreaker.windowMillis
+
+        // Synchronized block for compound operation (remove + calculate)
+        synchronized(enqueueTimestamps) {
+            // Remove stale timestamps
+            enqueueTimestamps.removeAll { it < windowStart }
+
+            // Calculate rate: events per second
+            val windowSeconds = options.circuitBreaker.windowMillis / 1000.0
+            return enqueueTimestamps.size / windowSeconds
+        }
+    }
+
+    /** Get current enqueue rate without modifying state (for external callers). */
+    fun getEnqueueRate(): Double = getCurrentEnqueueRate()
+
     /** Configuration for DLQ behavior. */
     data class Options(
         val enabled: Boolean = true,
         val type: StorageType = StorageType.FILE,
         val filePath: String = "dlq/failed-events.jsonl",
         val replayMode: ReplayMode = ReplayMode.MANUAL_REVIEW,
+        val circuitBreaker: CircuitBreakerOptions = CircuitBreakerOptions(),
     ) {
         enum class StorageType {
             FILE,
@@ -114,6 +192,44 @@ open class DeadLetterQueue(
 
             /** Entries are automatically marked for replay (initial status: REPLAY) */
             AUTOMATIC_REPLAY,
+        }
+
+        /**
+         * Circuit breaker configuration to prevent overwhelming the DLQ.
+         *
+         * When the enqueue rate exceeds the threshold, the circuit breaker opens and
+         * new enqueue attempts fail, allowing Process Managers to halt processing.
+         */
+        data class CircuitBreakerOptions(
+            /** Enable circuit breaker behavior */
+            val enabled: Boolean = false,
+
+            /** Maximum allowed enqueue rate (events per second) */
+            val rateThreshold: Double = 10.0,
+
+            /** Time window for rate calculation (milliseconds) */
+            val windowMillis: Long = 60_000, // 1 minute default
+        )
+    }
+
+    /** Outcome of an enqueue operation. */
+    sealed class EnqueueOutcome {
+        abstract val currentRate: Double
+
+        /** Enqueue succeeded. */
+        data class Success(override val currentRate: Double) : EnqueueOutcome()
+
+        /**
+         * Enqueue failed due to an exception.
+         *
+         * Check for [DlqThresholdExceededException] to detect circuit breaker trips.
+         */
+        data class Failure(
+            override val currentRate: Double,
+            val exception: Throwable,
+        ) : EnqueueOutcome() {
+            /** Check if this failure is due to circuit breaker opening. */
+            fun isCircuitBreakerOpen(): Boolean = exception is DlqThresholdExceededException
         }
     }
 
