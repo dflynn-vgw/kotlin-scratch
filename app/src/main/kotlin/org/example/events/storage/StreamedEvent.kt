@@ -1,6 +1,7 @@
 package org.example.events.storage
 
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import org.example.events.Event
 
@@ -11,6 +12,6 @@ import org.example.events.Event
  */
 @Serializable
 data class StreamedEvent(
-    val event: Event<*>,
+    @Polymorphic val event: Event<*>,
     val offset: StreamOffset,
 )

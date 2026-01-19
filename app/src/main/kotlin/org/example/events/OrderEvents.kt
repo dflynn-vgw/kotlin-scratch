@@ -1,6 +1,7 @@
 package org.example.events
 
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -8,22 +9,19 @@ import java.util.UUID
 sealed interface OrderEvents {
 
     /** Customer has placed a new order */
+    @Serializable
+    @SerialName("OrderPlacedEvent")
     data class OrderPlacedEvent(
         @Contextual override val id: UUID = UUID.randomUUID(),
         override val version: Int,
         override val payload: Payload,
         override val context: Map<String, String> = emptyMap(),
         override val timestamp: Long = System.currentTimeMillis(),
-    ) : Event<OrderPlacedEvent.Payload>(
-        id = id,
-        type = EventType.ORDER_PLACED,
-        streamId = "order-${payload.orderId}",
-        streamType = StreamType.ORDER_STREAM,
-        version = version,
-        payload = payload,
-        context = context,
-        timestamp = timestamp,
-    ) {
+    ) : Event<OrderPlacedEvent.Payload>() {
+        override val type: EventType = EventType.ORDER_PLACED
+        override val streamId: String get() = "order-${payload.orderId}"
+        override val streamType: StreamType = StreamType.ORDER_STREAM
+
         @Serializable
         data class Payload(
             val orderId: String,
@@ -35,22 +33,19 @@ sealed interface OrderEvents {
     }
 
     /** Order has been modified */
+    @Serializable
+    @SerialName("OrderModifiedEvent")
     data class OrderModifiedEvent(
         @Contextual override val id: UUID = UUID.randomUUID(),
         override val version: Int,
         override val payload: Payload,
         override val context: Map<String, String> = emptyMap(),
         override val timestamp: Long = System.currentTimeMillis(),
-    ) : Event<OrderModifiedEvent.Payload>(
-        id = id,
-        type = EventType.ORDER_MODIFIED,
-        streamId = "order-${payload.orderId}",
-        streamType = StreamType.ORDER_STREAM,
-        version = version,
-        payload = payload,
-        context = context,
-        timestamp = timestamp,
-    ) {
+    ) : Event<OrderModifiedEvent.Payload>() {
+        override val type: EventType = EventType.ORDER_MODIFIED
+        override val streamId: String get() = "order-${payload.orderId}"
+        override val streamType: StreamType = StreamType.ORDER_STREAM
+
         @Serializable
         data class Payload(
             val orderId: String,
@@ -61,22 +56,19 @@ sealed interface OrderEvents {
     }
 
     /** Order has been confirmed and accepted for processing */
+    @Serializable
+    @SerialName("OrderConfirmedEvent")
     data class OrderConfirmedEvent(
         @Contextual override val id: UUID = UUID.randomUUID(),
         override val version: Int,
         override val payload: Payload,
         override val context: Map<String, String> = emptyMap(),
         override val timestamp: Long = System.currentTimeMillis(),
-    ) : Event<OrderConfirmedEvent.Payload>(
-        id = id,
-        type = EventType.ORDER_CONFIRMED,
-        streamId = "order-${payload.orderId}",
-        streamType = StreamType.ORDER_STREAM,
-        version = version,
-        payload = payload,
-        context = context,
-        timestamp = timestamp,
-    ) {
+    ) : Event<OrderConfirmedEvent.Payload>() {
+        override val type: EventType = EventType.ORDER_CONFIRMED
+        override val streamId: String get() = "order-${payload.orderId}"
+        override val streamType: StreamType = StreamType.ORDER_STREAM
+
         @Serializable
         data class Payload(
             val orderId: String,
@@ -85,22 +77,19 @@ sealed interface OrderEvents {
     }
 
     /** Order has been cancelled */
+    @Serializable
+    @SerialName("OrderCancelledEvent")
     data class OrderCancelledEvent(
         @Contextual override val id: UUID = UUID.randomUUID(),
         override val version: Int,
         override val payload: Payload,
         override val context: Map<String, String> = emptyMap(),
         override val timestamp: Long = System.currentTimeMillis(),
-    ) : Event<OrderCancelledEvent.Payload>(
-        id = id,
-        type = EventType.ORDER_CANCELLED,
-        streamId = "order-${payload.orderId}",
-        streamType = StreamType.ORDER_STREAM,
-        version = version,
-        payload = payload,
-        context = context,
-        timestamp = timestamp,
-    ) {
+    ) : Event<OrderCancelledEvent.Payload>() {
+        override val type: EventType = EventType.ORDER_CANCELLED
+        override val streamId: String get() = "order-${payload.orderId}"
+        override val streamType: StreamType = StreamType.ORDER_STREAM
+
         @Serializable
         data class Payload(
             val orderId: String,

@@ -37,7 +37,7 @@ class DeadLetterQueueTest {
         assertTrue(Files.exists(filePath))
         val lines = Files.readAllLines(filePath)
         assertEquals(1, lines.size)
-        assertEquals(entry, lines[0].fromJSON())
+        assertEquals(entry, lines[0].fromJSON<DeadLetterQueue.Entry>())
     }
 
     @Test
@@ -114,7 +114,7 @@ class DeadLetterQueueTest {
         dlq.enqueue(entry)
 
         val json = Files.readString(filePath)
-        assertEquals(entry, json.fromJSON())
+        assertEquals(entry, json.fromJSON<DeadLetterQueue.Entry>())
     }
 
     // Helper functions
