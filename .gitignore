@@ -114,6 +114,10 @@ config/secrets.yml
 .env.local
 .env.*.local
 
+# SPSC Bookmarks
+bookmarks/
+*.bookmark
+
 # Test output
 /test-output/
 /test-results/

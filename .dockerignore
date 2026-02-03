@@ -1,0 +1,50 @@
+# Build outputs
+build/
+.gradle/
+.kotlin/
+app/build/
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.githooks/
+.github/
+
+# Documentation and non-runtime files
+docs/
+*.md
+CONTRIB.md
+VERSION.md
+
+# Bookmarks (will be mounted as volumes)
+bookmarks/
+*.bookmark
+
+# Data files (will be mounted as volumes)
+data/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~

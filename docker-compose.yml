@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # SPSC instance 1: Order Events Processor
+  spsc-orders-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spsc-orders-1
+    environment:
+      # Spring configuration
+      SPRING_PROFILES_ACTIVE: worker
+      SPRING_APPLICATION_NAME: spsc-orders-1
+      
+      # SPSC configuration
+      APP_SPSC_CSV_PATH: /app/data/events.csv
+      APP_SPSC_BOOKMARKS_DIR: /app/bookmarks
+      APP_SPSC_BOOKMARK_NAME: orders-processor-1
+      APP_SPSC_PRODUCER_BATCH_SIZE: 10
+      APP_SPSC_CONSUMER_BATCH_SIZE: 5
+      APP_SPSC_MAX_QUEUE_DEPTH: 100
+      APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD: 0
+      APP_SPSC_ENABLED: "true"
+      
+      # Logging
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_ORG_EXAMPLE: DEBUG
+    volumes:
+      # Mount the CSV source (read-only)
+      - ./data/events.csv:/app/data/events.csv:ro
+      # Mount separate bookmark directory for this instance
+      - ./bookmarks/spsc-orders-1:/app/bookmarks
+    restart: unless-stopped
+    networks:
+      - spsc-network
+
+  # SPSC instance 2: Order Events Processor (parallel instance)
+  spsc-orders-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spsc-orders-2
+    environment:
+      # Spring configuration
+      SPRING_PROFILES_ACTIVE: worker
+      SPRING_APPLICATION_NAME: spsc-orders-2
+      
+      # SPSC configuration
+      APP_SPSC_CSV_PATH: /app/data/events.csv
+      APP_SPSC_BOOKMARKS_DIR: /app/bookmarks
+      APP_SPSC_BOOKMARK_NAME: orders-processor-2
+      APP_SPSC_PRODUCER_BATCH_SIZE: 10
+      APP_SPSC_CONSUMER_BATCH_SIZE: 5
+      APP_SPSC_MAX_QUEUE_DEPTH: 100
+      APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD: 0
+      APP_SPSC_ENABLED: "true"
+      
+      # Logging
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_ORG_EXAMPLE: DEBUG
+    volumes:
+      # Mount the CSV source (read-only)
+      - ./data/events.csv:/app/data/events.csv:ro
+      # Mount separate bookmark directory for this instance
+      - ./bookmarks/spsc-orders-2:/app/bookmarks
+    restart: unless-stopped
+    networks:
+      - spsc-network
+
+  # SPSC instance 3: Order Events Processor (another parallel instance)
+  spsc-orders-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spsc-orders-3
+    environment:
+      # Spring configuration
+      SPRING_PROFILES_ACTIVE: worker
+      SPRING_APPLICATION_NAME: spsc-orders-3
+      
+      # SPSC configuration
+      APP_SPSC_CSV_PATH: /app/data/events.csv
+      APP_SPSC_BOOKMARKS_DIR: /app/bookmarks
+      APP_SPSC_BOOKMARK_NAME: orders-processor-3
+      APP_SPSC_PRODUCER_BATCH_SIZE: 10
+      APP_SPSC_CONSUMER_BATCH_SIZE: 5
+      APP_SPSC_MAX_QUEUE_DEPTH: 100
+      APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD: 0
+      APP_SPSC_ENABLED: "true"
+      
+      # Logging
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_ORG_EXAMPLE: DEBUG
+    volumes:
+      # Mount the CSV source (read-only)
+      - ./data/events.csv:/app/data/events.csv:ro
+      # Mount separate bookmark directory for this instance
+      - ./bookmarks/spsc-orders-3:/app/bookmarks
+    restart: unless-stopped
+    networks:
+      - spsc-network
+
+networks:
+  spsc-network:
+    driver: bridge
