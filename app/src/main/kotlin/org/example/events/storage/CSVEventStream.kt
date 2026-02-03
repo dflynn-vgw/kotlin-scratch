@@ -13,6 +13,13 @@ import kotlin.concurrent.write
  * CSV-based event stream implementation.
  * Reads events from a CSV file and persists bookmarks to separate CSV files.
  *
+ * This implementation uses buffered reading to efficiently stream events from the CSV.
+ * On each stream() call, it seeks to the requested position and reads only the
+ * requested batch size, enabling real-time detection of appended events without
+ * loading the entire file into memory.
+ *
+ * Bookmarks are cached in memory and persisted to separate CSV files for durability.
+ *
  * Event CSV Format: ORDER_ID,CUSTOMER_ID,EVENT_TYPE,TIMESTAMP
  * Bookmark CSV Format: POSITION,TIMESTAMP
  */
@@ -21,9 +28,6 @@ class CSVEventStream(
     private val bookmarksDir: String = ".",
 ) : EventStream {
 
-    private val eventsCachelock = ReentrantReadWriteLock()
-    private var eventsCache: List<Event<*>>? = null
-
     private val bookmarksLock = ReentrantReadWriteLock()
     private val bookmarksCache = mutableMapOf<String, Bookmark>()
 
@@ -31,11 +35,11 @@ class CSVEventStream(
         require(fromPosition >= 0) { "fromPosition must be non-negative" }
         require(batchSize > 0) { "batchSize must be positive" }
 
-        val events = loadEvents()
-        val endPosition = (fromPosition + batchSize).coerceAtMost(events.size.toLong()).toInt()
+        // Read only the events we need from the CSV
+        val events = readEventsFromCsv(fromPosition.toInt(), batchSize)
 
-        (fromPosition.toInt() until endPosition).forEach { index ->
-            emit(events[index])
+        events.forEach { event ->
+            emit(event)
         }
     }
 
@@ -85,20 +89,15 @@ class CSVEventStream(
         }
     }
 
-    private fun loadEvents(): List<Event<*>> {
-        eventsCache?.let { return it }
-
-        // Load from file (must acquire write lock)
-        return eventsCachelock.write {
-            eventsCache?.let { return@write it } // Double-check after acquiring write lock
-
-            val events = readEventsFromCsv()
-            eventsCache = events
-            events
-        }
-    }
-
-    private fun readEventsFromCsv(): List<Event<*>> {
+    /**
+     * Read events from CSV starting at a specific line.
+     *
+     * @param startLine 1-indexed line number to start reading from (1 = first data line after header)
+     * @param maxEvents Maximum number of events to read
+     * @param skipHeader Whether to skip the header line (default: true)
+     * @return List of events read from the CSV
+     */
+    private fun readEventsFromCsv(startLine: Int, maxEvents: Int, skipHeader: Boolean = true): List<Event<*>> {
         val csvFile = File(eventsCsvPath)
 
         if (!csvFile.exists()) {
@@ -106,33 +105,64 @@ class CSVEventStream(
         }
 
         val events = mutableListOf<Event<*>>()
-        val lines = csvFile.readLines()
 
-        // Skip header (line 0)
-        for (i in 1 until lines.size) {
-            val line = lines[i].trim()
-            if (line.isEmpty()) continue
+        // Use bufferedReader and skip to the line we need
+        csvFile.bufferedReader().use { reader ->
+            // Skip header line (line 0)
+            reader.readLine()
 
-            try {
-                val parts = line.split(",").map { it.trim() }
-                if (parts.size < 4) continue
+            // Skip lines until we reach startLine
+            var currentLine = 1
+            val readFrom = if (skipHeader) startLine + 1 else startLine
 
-                val orderId = parts[0]
-                val customerId = parts[1]
-                val eventTypeStr = parts[2]
-                val timestamp = parts[3].toLongOrNull() ?: continue
+            while (currentLine < readFrom) {
+                reader.readLine() ?: return events // End of file
+                currentLine++
+            }
 
-                val eventType = try {
-                    Event.EventType.valueOf(eventTypeStr)
-                } catch (e: IllegalArgumentException) {
+            // Read up to maxEvents
+            var eventsRead = 0
+            while (eventsRead < maxEvents) {
+                val line = reader.readLine() ?: break // End of file
+                val trimmedLine = line.trim()
+
+                if (trimmedLine.isEmpty()) {
+                    currentLine++
                     continue
                 }
 
-                val event = buildEvent(orderId, customerId, eventType, timestamp, i)
-                events.add(event)
-            } catch (e: Exception) {
-                // Skip malformed lines
-                continue
+                try {
+                    val parts = trimmedLine.split(",").map { it.trim() }
+                    if (parts.size < 4) {
+                        currentLine++
+                        continue
+                    }
+
+                    val orderId = parts[0]
+                    val customerId = parts[1]
+                    val eventTypeStr = parts[2]
+                    val timestamp = parts[3].toLongOrNull()
+
+                    if (timestamp == null) {
+                        currentLine++
+                        continue
+                    }
+
+                    val eventType = try {
+                        Event.EventType.valueOf(eventTypeStr)
+                    } catch (e: IllegalArgumentException) {
+                        currentLine++
+                        continue
+                    }
+
+                    val event = buildEvent(orderId, customerId, eventType, timestamp, currentLine)
+                    events.add(event)
+                    eventsRead++
+                } catch (e: Exception) {
+                    // Skip malformed lines
+                }
+
+                currentLine++
             }
         }
 
