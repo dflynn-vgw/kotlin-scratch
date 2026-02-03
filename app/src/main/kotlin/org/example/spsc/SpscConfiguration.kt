@@ -22,9 +22,8 @@ class SpscConfiguration {
     @Bean
     fun eventStream(properties: SpscProperties): CSVEventStream {
         logger.info("Creating EventStream from CSV: {}", properties.csvPath)
-        val csvFile = File(properties.csvPath)
-        val bookmarkDir = csvFile.parent ?: "."
-        return CSVEventStream(csvFile.absolutePath, bookmarkDir)
+        logger.info("Bookmarks directory: {}", properties.bookmarksDir)
+        return CSVEventStream(properties.csvPath, properties.bookmarksDir)
     }
 
     /**

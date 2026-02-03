@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *
  * All properties support environment variable override:
  * - APP_SPSC_CSV_PATH
+ * - APP_SPSC_BOOKMARKS_DIR
  * - APP_SPSC_BOOKMARK_NAME
  * - APP_SPSC_PRODUCER_BATCH_SIZE
  * - APP_SPSC_CONSUMER_BATCH_SIZE
@@ -19,6 +20,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class SpscProperties(
     /** Path to the CSV file containing events */
     var csvPath: String = "",
+
+    /** Directory to store bookmarks (consumer progress checkpoints) */
+    var bookmarksDir: String = ".",
 
     /** Name for the bookmark (consumer progress checkpoint) */
     var bookmarkName: String = "default-consumer",
