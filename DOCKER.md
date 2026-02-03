@@ -81,6 +81,7 @@ Each SPSC instance can be configured using environment variables:
 | `APP_SPSC_CONSUMER_BATCH_SIZE` | Events consumed per batch | `5` |
 | `APP_SPSC_MAX_QUEUE_DEPTH` | Internal queue size | `100` |
 | `APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD` | Exit after N empty batches (0=indefinite) | `0` |
+| `APP_SPSC_PRODUCER_EMPTY_BATCH_SLEEP_MS` | Sleep duration between empty batches (ms) | `100` |
 | `APP_SPSC_ENABLED` | Enable SPSC processing | `true` |
 
 ### Customizing Instances

@@ -45,15 +45,7 @@ USER spsc
 # Expose any ports if needed (currently not used in worker mode)
 # EXPOSE 8080
 
-# Default environment variables
-ENV SPRING_PROFILES_ACTIVE=worker \
-    APP_SPSC_CSV_PATH=/app/data/events.csv \
-    APP_SPSC_BOOKMARKS_DIR=/app/bookmarks \
-    APP_SPSC_BOOKMARK_NAME=default-consumer \
-    APP_SPSC_PRODUCER_BATCH_SIZE=10 \
-    APP_SPSC_CONSUMER_BATCH_SIZE=5 \
-    APP_SPSC_MAX_QUEUE_DEPTH=100 \
-    APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD=0 \
-    APP_SPSC_ENABLED=true
+# Set Spring profile (application.yml contains all other defaults)
+ENV SPRING_PROFILES_ACTIVE=worker
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

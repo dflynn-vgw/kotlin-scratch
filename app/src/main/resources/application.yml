@@ -36,6 +36,8 @@ app:
     max-queue-depth: ${APP_SPSC_MAX_QUEUE_DEPTH:5}
     # Number of consecutive empty batches before producer exits (0 = run indefinitely)
     producer-empty-batch-threshold: ${APP_SPSC_PRODUCER_EMPTY_BATCH_THRESHOLD:0}
+    # Sleep duration in milliseconds between empty producer batches
+    producer-empty-batch-sleep-ms: ${APP_SPSC_PRODUCER_EMPTY_BATCH_SLEEP_MS:100}
     # Whether to enable SPSC processing on startup
     enabled: ${APP_SPSC_ENABLED:true}
 

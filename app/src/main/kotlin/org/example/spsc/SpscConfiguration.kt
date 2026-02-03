@@ -66,6 +66,7 @@ class SpscConfiguration {
             maxQueueDepth = properties.maxQueueDepth,
             bookmarkName = properties.bookmarkName,
             producerEmptyBatchThreshold = properties.producerEmptyBatchThreshold,
+            producerEmptyBatchSleepMs = properties.producerEmptyBatchSleepMs,
         )
         return SpscCoordinator(producer, consumer, eventStream, config)
     }

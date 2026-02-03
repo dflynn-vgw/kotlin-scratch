@@ -126,8 +126,8 @@ class SpscCoordinator(
                         break
                     }
 
-                    // Sleep briefly before retrying
-                    Thread.sleep(100)
+                    // Sleep before retrying (configurable duration)
+                    Thread.sleep(config.producerEmptyBatchSleepMs)
                 } else {
                     // Reset empty batch counter when we produce events
                     consecutiveEmptyBatches = 0

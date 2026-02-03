@@ -45,10 +45,15 @@ class SpscWorkerService(
         // If producerEmptyBatchThreshold == 0, coordinator runs indefinitely
         if (properties.producerEmptyBatchThreshold > 0) {
             logger.info("SPSC coordinator will stop after processing all events")
-            // Calculate timeout based on threshold and sleep time per empty batch (100ms)
+            // Calculate timeout based on threshold and sleep time per empty batch
             // Add extra buffer for processing time
-            val estimatedTimeMs = (properties.producerEmptyBatchThreshold * 100L) + 30_000L
-            logger.info("Waiting for coordinator to finish (timeout: {}ms)...", estimatedTimeMs)
+            val estimatedTimeMs = (properties.producerEmptyBatchThreshold * properties.producerEmptyBatchSleepMs) + 30_000L
+            logger.info(
+                "Waiting for coordinator to finish (timeout: {}ms, based on {} batches x {}ms)...",
+                estimatedTimeMs,
+                properties.producerEmptyBatchThreshold,
+                properties.producerEmptyBatchSleepMs,
+            )
             val finished = coordinator.await(estimatedTimeMs)
             if (finished) {
                 logger.info("SPSC coordinator finished, exiting application")

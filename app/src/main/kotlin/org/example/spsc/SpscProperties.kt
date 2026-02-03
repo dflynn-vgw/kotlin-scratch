@@ -39,6 +39,9 @@ data class SpscProperties(
     /** Number of consecutive empty batches before producer exits (0 = indefinite) */
     var producerEmptyBatchThreshold: Int = 0,
 
+    /** Sleep duration in milliseconds between empty producer batches */
+    var producerEmptyBatchSleepMs: Long = 100,
+
     /** Whether to enable SPSC processing on startup */
     var enabled: Boolean = true,
 )

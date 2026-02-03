@@ -25,4 +25,10 @@ data class SpscConfig(
      * Default: 0 (production mode - runs indefinitely)
      */
     val producerEmptyBatchThreshold: Int = 0,
+
+    /**
+     * Sleep duration in milliseconds between empty producer batches.
+     * Default: 100ms
+     */
+    val producerEmptyBatchSleepMs: Long = 100,
 )
