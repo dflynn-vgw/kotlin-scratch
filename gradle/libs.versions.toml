@@ -2,6 +2,7 @@
 kotlin = "2.2.21"
 kotlinx = "1.9.0"
 junit = "5.14.1"
+kotest = "6.1.0"
 versions-plugin = "0.53.0"
 spotless = "8.1.0"
 spring-boot = "3.5.8"
@@ -34,3 +35,6 @@ reactor-test = { module = "io.projectreactor:reactor-test" }
 r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql" }
 r2dbc-pool = { module = "io.r2dbc:r2dbc-pool" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+
+# Kotest property testing
+kotest-property = { module = "io.kotest:kotest-property-jvm", version.ref = "kotest" }
